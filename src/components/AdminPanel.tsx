@@ -1198,11 +1198,12 @@ export default function AdminPanel({
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tiền giảm giá (giảm thêm)</label>
                     <input
-                      type="number"
+                      type="text"
                       min={0}
-                      value={editingOrder.discountAmount}
+                      value={editingOrder.discountAmount ? editingOrder.discountAmount.toLocaleString('vi-VN') : ''}
                       onChange={(e) => {
-                        const val = Math.max(0, Number(e.target.value));
+                        const raw = e.target.value.replace(/\./g, '');
+                        const val = Math.max(0, Number(raw) || 0);
                         setEditingOrder({
                           ...editingOrder,
                           discountAmount: val,
@@ -1545,11 +1546,14 @@ export default function AdminPanel({
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Giá bán (VND)*</label>
                   <input
-                    type="number"
+                    type="text"
                     required
                     min={0}
-                    value={newProduct.price}
-                    onChange={(e) => setNewProduct({ ...newProduct, price: Number(e.target.value) })}
+                    value={newProduct.price ? newProduct.price.toLocaleString('vi-VN') : ''}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\./g, '');
+                      setNewProduct({ ...newProduct, price: Number(raw) || 0 });
+                    }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:bg-white outline-none font-mono"
                   />
                 </div>
@@ -1679,12 +1683,18 @@ export default function AdminPanel({
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Giá bán (VND)*</label>
+                  <p className="text-[9px] text-orange-600 font-bold mb-1">
+                    Hiển thị: {Number(editingProduct.price).toLocaleString('vi-VN')} đ
+                  </p>
                   <input
-                    type="number"
+                    type="text"
                     required
                     min={0}
-                    value={editingProduct.price}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, price: Number(e.target.value) })}
+                    value={editingProduct.price ? editingProduct.price.toLocaleString('vi-VN') : ''}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\./g, '');
+                      setEditingProduct({ ...editingProduct, price: Number(raw) || 0 });
+                    }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:bg-white outline-none font-mono"
                   />
                 </div>
@@ -2088,11 +2098,14 @@ export default function AdminPanel({
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Giá trị chiết khấu*</label>
                   <input
-                    type="number"
+                    type="text"
                     required
                     min={1}
-                    value={newPromo.value}
-                    onChange={(e) => setNewPromo({ ...newPromo, value: Number(e.target.value) })}
+                    value={newPromo.value ? newPromo.value.toLocaleString('vi-VN') : ''}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\./g, '');
+                      setNewPromo({ ...newPromo, value: Number(raw) || 0 });
+                    }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:bg-white outline-none font-mono"
                   />
                 </div>
@@ -2100,11 +2113,14 @@ export default function AdminPanel({
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Yêu cầu Đơn hàng tối thiểu*</label>
                   <input
-                    type="number"
+                    type="text"
                     required
                     min={0}
-                    value={newPromo.minOrderValue}
-                    onChange={(e) => setNewPromo({ ...newPromo, minOrderValue: Number(e.target.value) })}
+                    value={newPromo.minOrderValue ? newPromo.minOrderValue.toLocaleString('vi-VN') : ''}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\./g, '');
+                      setNewPromo({ ...newPromo, minOrderValue: Number(raw) || 0 });
+                    }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:bg-white outline-none font-mono"
                   />
                 </div>
@@ -2114,7 +2130,7 @@ export default function AdminPanel({
                 <label className="flex items-center gap-1.5 cursor-pointer bg-slate-50 border p-2 rounded-xl text-[10px] font-bold text-slate-600">
                   <input type="checkbox" checked={newPromo.isActive} onChange={(e) => setNewPromo({...newPromo, isActive: e.target.checked})} /> Kích hoạt
                 </label>
-                <input type="number" placeholder="Giới hạn số lần (0 = ko giới hạn)" value={newPromo.maxUsageCount || 0} onChange={(e) => setNewPromo({...newPromo, maxUsageCount: Number(e.target.value)})} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold w-full md:w-auto" />
+                <input type="text" placeholder="Giới hạn số lần (0 = ko giới hạn)" value={newPromo.maxUsageCount || 0} onChange={(e) => { const raw = e.target.value.replace(/\D/g, ''); setNewPromo({...newPromo, maxUsageCount: Number(raw)});}} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold w-full md:w-auto" />
                 <input type="datetime-local" value={newPromo.startDate || ''} onChange={(e) => setNewPromo({...newPromo, startDate: e.target.value})} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs w-full md:w-auto" />
                 <input type="datetime-local" value={newPromo.endDate || ''} onChange={(e) => setNewPromo({...newPromo, endDate: e.target.value})} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs w-full md:w-auto" />
               </div>
@@ -2169,11 +2185,17 @@ export default function AdminPanel({
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Giá trị chiết khấu*</label>
                   <input
-                    type="number"
+                    type="text"
                     required
                     min={1}
-                    value={editingPromo.value}
-                    onChange={(e) => setEditingPromo({ ...editingPromo, value: Number(e.target.value) })}
+                    value={editingPromo.value ? editingPromo.value.toLocaleString('vi-VN') : ''}
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/\./g, '');
+                      const numericValue = Number(rawValue);
+                      if (!isNaN(numericValue)) {
+                        setEditingPromo({ ...editingPromo, value: numericValue });
+                      }
+                    }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:bg-white outline-none font-mono"
                   />
                 </div>
@@ -2181,11 +2203,14 @@ export default function AdminPanel({
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Yêu cầu Đơn hàng tối thiểu*</label>
                   <input
-                    type="number"
+                    type="text"
                     required
                     min={0}
-                    value={editingPromo.minOrderValue}
-                    onChange={(e) => setEditingPromo({ ...editingPromo, minOrderValue: Number(e.target.value) })}
+                    value={editingPromo.minOrderValue ? editingPromo.minOrderValue.toLocaleString('vi-VN') : ''}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\./g, '');
+                      setEditingPromo({ ...editingPromo, minOrderValue: Number(raw) || 0 });
+                    }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:bg-white outline-none font-mono"
                   />
                 </div>
@@ -2195,7 +2220,7 @@ export default function AdminPanel({
                 <label className="flex items-center gap-1.5 cursor-pointer bg-slate-50 border p-2 rounded-xl text-[10px] font-bold text-slate-600">
                   <input type="checkbox" checked={editingPromo.isActive} onChange={(e) => setEditingPromo({...editingPromo, isActive: e.target.checked})} /> Kích hoạt
                 </label>
-                <input type="number" placeholder="Giới hạn số lần (0 = ko giới hạn)" value={editingPromo.maxUsageCount || 0} onChange={(e) => setEditingPromo({...editingPromo, maxUsageCount: Number(e.target.value)})} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold w-full md:w-auto" />
+                <input type="text" placeholder="Giới hạn số lần (0 = ko giới hạn)" value={editingPromo.maxUsageCount || 0} onChange={(e) => { const raw = e.target.value.replace(/\D/g, ''); setEditingPromo({...editingPromo, maxUsageCount: Number(raw)});}} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold w-full md:w-auto" />
                 <input type="datetime-local" value={editingPromo.startDate || ''} onChange={(e) => setEditingPromo({...editingPromo, startDate: e.target.value})} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs w-full md:w-auto" />
                 <input type="datetime-local" value={editingPromo.endDate || ''} onChange={(e) => setEditingPromo({...editingPromo, endDate: e.target.value})} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs w-full md:w-auto" />
               </div>
