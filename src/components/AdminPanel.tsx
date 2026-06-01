@@ -1151,6 +1151,39 @@ export default function AdminPanel({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Áp dụng Khuyến mãi</label>
+                    <select
+                      value={editingOrder.promoCodeUsed || ''}
+                      onChange={(e) => {
+                        const code = e.target.value;
+                        const promo = promotions.find(p => p.code === code);
+                        if (!promo) {
+                          setEditingOrder({
+                            ...editingOrder,
+                            promoCodeUsed: undefined,
+                            discountAmount: 0,
+                            totalAmount: editingOrder.subTotal
+                          });
+                        } else {
+                          const discount = promo.type === 'fixed' ? promo.value : (editingOrder.subTotal * promo.value) / 100;
+                          setEditingOrder({
+                            ...editingOrder,
+                            promoCodeUsed: code,
+                            discountAmount: discount,
+                            totalAmount: Math.max(0, editingOrder.subTotal - discount)
+                          });
+                        }
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-semibold outline-none cursor-pointer"
+                    >
+                      <option value="">Không áp dụng</option>
+                      {promotions.filter(p => !p.startDate || p.startDate <= new Date().toISOString()).map(p => (
+                        <option key={p.id} value={p.code}>{p.code} (-{p.value}{p.type === 'percentage' ? '%' : 'đ'})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hình thức thanh toán</label>
                     <select
                       value={editingOrder.paymentMethod}
