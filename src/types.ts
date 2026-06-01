@@ -1,0 +1,77 @@
+export interface Product {
+  id: string;
+  name: string;
+  categoryId: string;
+  price: number;
+  image: string; // Emoji character or URL
+  description: string;
+  isAvailable: boolean;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  icon: string; // Emoji character or Lucide icon name
+  sortOrder?: number;
+}
+
+export interface CartItem {
+  product: Product;
+  quantity: number;
+}
+
+export interface OrderItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  priceOnOrder: number;
+}
+
+export type OrderStatus = 'pending' | 'preparing' | 'delivering' | 'completed' | 'cancelled';
+export type PaymentStatus = 'unpaid' | 'paid' | 'debt';
+
+export interface Order {
+  id: string;
+  billCode: string;
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
+  paymentMethod: string; // 'cod' | 'banking'
+  items: OrderItem[];
+  subTotal: number;
+  discountAmount: number;
+  totalAmount: number;
+  promoCodeUsed?: string;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  createdAt: string;
+  note?: string;
+}
+
+export interface StoreConfig {
+  name: string;
+  address: string;
+  phone: string;
+  zaloHotline: string;
+  bankName: string;
+  bankAccount: string;
+  bankAccountName: string;
+  openHours: string;
+  customQrCodeUrl?: string;
+}
+
+export interface Promotion {
+  id: string;
+  code: string;
+  type: 'percentage' | 'fixed';
+  value: number; // e.g. 10 for percentage, 20000 for fixed
+  minOrderValue: number;
+  isActive: boolean;
+}
+
+export interface CustomerCookieData {
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
+  paymentMethod: string;
+}
