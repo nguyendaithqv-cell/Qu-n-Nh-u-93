@@ -1,3 +1,14 @@
+export interface Customer {                
+  phone: string;
+  firstName: string;
+  totalOrders: number;
+  totalSpent: number;
+  address: string;
+  debtOrders: number;
+  debtAmount: number;
+  notes: string[];
+}                
+
 export interface Product {
   id: string;
   name: string;

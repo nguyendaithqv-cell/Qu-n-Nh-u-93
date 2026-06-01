@@ -26,7 +26,7 @@ import {
   ArrowDown,
   Upload
 } from 'lucide-react';
-import { Product, Category, Order, OrderStatus, PaymentStatus, StoreConfig, Promotion } from '../types';
+import { Product, Category, Order, OrderStatus, PaymentStatus, StoreConfig, Promotion, Customer } from '../types';
 
 interface AdminPanelProps {
   products: Product[];
@@ -56,7 +56,7 @@ export default function AdminPanel({
   onLogout
 }: AdminPanelProps) {
   // Navigation
-  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'categories' | 'promotions' | 'store'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'categories' | 'promotions' | 'store' | 'customers'>('orders');
   const [searchQuery, setSearchQuery] = useState('');
   const [orderSearchQuery, setOrderSearchQuery] = useState('');
 
@@ -155,6 +155,39 @@ export default function AdminPanel({
   };
 
   const stats = calculateStats();
+
+  // Customers aggregation
+  const customers: Customer[] = React.useMemo(() => {
+    const custMap = orders.reduce((acc, order) => {
+      const { customerPhone, customerName, totalAmount, paymentStatus, customerAddress } = order;
+      if (!acc[customerPhone]) {
+        acc[customerPhone] = {
+          phone: customerPhone,
+          firstName: customerName,
+          totalOrders: 0,
+          totalSpent: 0,
+          address: customerAddress,
+          debtOrders: 0,
+          debtAmount: 0,
+          notes: new Set([customerName])
+        };
+      }
+      const cust = acc[customerPhone];
+      cust.totalOrders++;
+      cust.totalSpent += totalAmount;
+      if (paymentStatus === 'debt') {
+        cust.debtOrders++;
+        cust.debtAmount += totalAmount;
+      }
+      cust.notes.add(customerName);
+      return acc;
+    }, {} as any);
+
+    return Object.values(custMap).map((c: any) => ({
+      ...c,
+      notes: Array.from(c.notes)
+    }));
+  }, [orders]);
 
   // Order Operations
   const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
@@ -664,6 +697,14 @@ export default function AdminPanel({
         >
           <Layers className="w-4 h-4" /> Danh Mục ({categories.length})
         </button>
+        <button
+          onClick={() => setActiveTab('customers')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all shrink-0 uppercase tracking-wide font-black ${
+            activeTab === 'customers' ? 'bg-orange-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <Smartphone className="w-4 h-4" /> Khách hàng
+        </button>              
         <button
           onClick={() => setActiveTab('promotions')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all shrink-0 uppercase tracking-wide font-black ${
@@ -1944,6 +1985,46 @@ export default function AdminPanel({
             </table>
           </div>
 
+        </div>
+      )}
+
+      {/* 6. CUSTOMER VIEW */}
+      {activeTab === 'customers' && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-fade-in text-xs">
+          <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <h2 className="font-extrabold text-xs text-slate-800 uppercase tracking-wide">Danh sách khách hàng</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-slate-100 text-slate-500 text-[9px] uppercase font-bold tracking-wider border-b border-slate-200">
+                <tr>
+                  <th className="px-4 py-3">SDT / Tên</th>
+                  <th className="px-4 py-3">Địa chỉ</th>
+                  <th className="px-4 py-3 text-right">Tổng Đơn</th>
+                  <th className="px-4 py-3 text-right">Đã Mua</th>
+                  <th className="px-4 py-3 text-right">Công Nợ</th>
+                  <th className="px-4 py-3">Ghi Chú</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700 font-medium font-sans">
+                {customers.map(cust => (
+                  <tr key={cust.phone} className="hover:bg-slate-50/50">
+                    <td className="px-4 py-3.5">
+                      <span className="font-bold text-orange-600 block text-xs font-mono tracking-wider">{cust.phone}</span>
+                      <span className="text-[10px] block">{cust.firstName}</span>
+                    </td>
+                    <td className="px-4 py-3.5 text-[10px] text-slate-500">{cust.address}</td>
+                    <td className="px-4 py-3.5 text-right font-bold text-slate-900">{cust.totalOrders}</td>
+                    <td className="px-4 py-3.5 text-right font-mono font-bold text-slate-900">{cust.totalSpent.toLocaleString('vi-VN')}đ</td>
+                    <td className="px-4 py-3.5 text-right text-rose-600 font-bold font-mono">
+                      {cust.debtOrders > 0 ? `${cust.debtOrders} đơn / ${cust.debtAmount.toLocaleString('vi-VN')}đ` : '0đ'}
+                    </td>
+                    <td className="px-4 py-3.5 text-[10px] text-slate-500 italic">{cust.notes.join(', ')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
