@@ -27,6 +27,7 @@ import {
   Upload
 } from 'lucide-react';
 import { Product, Category, Order, OrderStatus, PaymentStatus, StoreConfig, Promotion, Customer } from '../types';
+import ReportSection from './ReportSection';
 
 interface AdminPanelProps {
   products: Product[];
@@ -56,7 +57,7 @@ export default function AdminPanel({
   onLogout
 }: AdminPanelProps) {
   // Navigation
-  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'categories' | 'promotions' | 'store' | 'customers'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'categories' | 'promotions' | 'store' | 'customers' | 'report'>('orders');
   const [productFilter, setProductFilter] = useState<'all' | 'available' | 'unavailable'>('all');
   const [categoryIdFilter, setCategoryIdFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -74,17 +75,26 @@ export default function AdminPanel({
     name: '',
     categoryId: categories[0]?.id || 'pho',
     price: 30000,
+    cost: 0,
     image: '🍜',
     description: '',
     isAvailable: true
   });
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
+  // Migration for old products without cost
+  useEffect(() => {
+    if (products.some(p => p.cost === undefined)) {
+        onUpdateProducts(products.map(p => ({ ...p, cost: p.cost || 0 })));
+    }
+  }, [products]);
+
   // Adding category state
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategory, setNewCategory] = useState<Omit<Category, 'id'>>({
     name: '',
-    icon: '🥡'
+    icon: '🥡',
+    type: 'food'
   });
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
@@ -417,12 +427,13 @@ export default function AdminPanel({
       id: cleanId || `cat-${Date.now()}`,
       name: newCategory.name.trim(),
       icon: newCategory.icon || '🥡',
-      sortOrder: nextSortOrder
+      sortOrder: nextSortOrder,
+      type: newCategory.type || 'food'
     };
 
     onUpdateCategories([...categories, catToAdd]);
     setIsAddingCategory(false);
-    setNewCategory({ name: '', icon: '🥡' });
+    setNewCategory({ name: '', icon: '🥡', type: 'food' });
   };
 
   const handleEditCategorySubmit = (e: React.FormEvent) => {
@@ -766,6 +777,14 @@ export default function AdminPanel({
         >
           <Smartphone className="w-4 h-4" /> Khách hàng
         </button>              
+        <button
+          onClick={() => setActiveTab('report')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all shrink-0 uppercase tracking-wide font-black ${
+            activeTab === 'report' ? 'bg-orange-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <FileText className="w-4 h-4" /> Báo Cáo
+        </button>
         <button
           onClick={() => setActiveTab('promotions')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all shrink-0 uppercase tracking-wide font-black ${
@@ -1557,6 +1576,20 @@ export default function AdminPanel({
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:bg-white outline-none font-mono"
                   />
                 </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Giá vốn (VND)*</label>
+                  <input
+                    type="text"
+                    required
+                    min={0}
+                    value={newProduct.cost ? newProduct.cost.toLocaleString('vi-VN') : ''}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\./g, '');
+                      setNewProduct({ ...newProduct, cost: Number(raw) || 0 });
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:bg-white outline-none font-mono"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -1657,7 +1690,7 @@ export default function AdminPanel({
                 <Edit3 className="w-4 h-4 text-orange-600" /> Sửa món: {editingProduct.name}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div className="md:col-span-2">
+                <div className="md:col-span-1">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tên món ăn*</label>
                   <input
                     type="text"
@@ -1682,10 +1715,7 @@ export default function AdminPanel({
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Giá bán (VND)*</label>
-                  <p className="text-[9px] text-orange-600 font-bold mb-1">
-                    Hiển thị: {Number(editingProduct.price).toLocaleString('vi-VN')} đ
-                  </p>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Giá bán*</label>
                   <input
                     type="text"
                     required
@@ -1694,6 +1724,21 @@ export default function AdminPanel({
                     onChange={(e) => {
                       const raw = e.target.value.replace(/\./g, '');
                       setEditingProduct({ ...editingProduct, price: Number(raw) || 0 });
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:bg-white outline-none font-mono"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Giá vốn*</label>
+                  <input
+                    type="text"
+                    required
+                    min={0}
+                    value={editingProduct.cost ? editingProduct.cost.toLocaleString('vi-VN') : ''}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\./g, '');
+                      setEditingProduct({ ...editingProduct, cost: Number(raw) || 0 });
                     }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:bg-white outline-none font-mono"
                   />
@@ -1842,7 +1887,7 @@ export default function AdminPanel({
                     <div className="flex gap-1">
                       <button
                         onClick={() => {
-                          setEditingProduct(prod);
+                          setEditingProduct({ ...prod, cost: prod.cost || 0 });
                           setIsAddingProduct(false);
                         }}
                         className="p-1.5 bg-slate-100 text-slate-800 hover:bg-orange-50 hover:text-orange-600 border border-slate-200 rounded-lg"
@@ -1890,7 +1935,7 @@ export default function AdminPanel({
               <h3 className="font-extrabold text-orange-600 uppercase text-[11px] tracking-wide flex items-center gap-1">
                 <Layers className="w-4 h-4" /> Thêm Danh mục mới
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tên danh mục*</label>
                   <input
@@ -1912,6 +1957,17 @@ export default function AdminPanel({
                     onChange={(e) => setNewCategory({ ...newCategory, icon: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-center focus:bg-white outline-none"
                   />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Phân loại báo cáo*</label>
+                  <select
+                    value={newCategory.type || 'food'}
+                    onChange={(e) => setNewCategory({ ...newCategory, type: e.target.value as 'food' | 'drink' })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-semibold focus:bg-white outline-none"
+                  >
+                    <option value="food">🥗 Đồ ăn</option>
+                    <option value="drink">🍺 Đồ uống / Bia</option>
+                  </select>
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
@@ -1938,7 +1994,7 @@ export default function AdminPanel({
               <h3 className="font-extrabold text-orange-600 uppercase text-[11px] tracking-wide flex items-center gap-1">
                 <Edit3 className="w-4 h-4" /> Sửa Danh Mục: {editingCategory.name}
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tên danh mục*</label>
                   <input
@@ -1958,6 +2014,17 @@ export default function AdminPanel({
                     onChange={(e) => setEditingCategory({ ...editingCategory, icon: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-center focus:bg-white outline-none"
                   />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Phân loại báo cáo*</label>
+                  <select
+                    value={editingCategory.type || 'food'}
+                    onChange={(e) => setEditingCategory({ ...editingCategory, type: e.target.value as 'food' | 'drink' })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-semibold focus:bg-white outline-none"
+                  >
+                    <option value="food">🥗 Đồ ăn</option>
+                    <option value="drink">🍺 Đồ uống / Bia</option>
+                  </select>
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
@@ -1987,7 +2054,12 @@ export default function AdminPanel({
                   <div className="flex items-center gap-3">
                     <span className="text-3xl select-none bg-orange-50 p-2 rounded-xl shrink-0">{cat.icon}</span>
                     <div>
-                      <h3 className="font-black text-slate-800 text-sm">{cat.name}</h3>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h3 className="font-black text-slate-800 text-sm">{cat.name}</h3>
+                        <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold uppercase ${cat.type === 'drink' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
+                          {cat.type === 'drink' ? 'Đồ uống' : 'Đồ ăn'}
+                        </span>
+                      </div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{count} sản phẩm trực thuộc</p>
                     </div>
                   </div>
@@ -2364,6 +2436,12 @@ export default function AdminPanel({
         </div>
       )}
 
+      {/* 7. REPORT VIEW */}
+      {activeTab === 'report' && (
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm animate-fade-in text-xs">
+          <ReportSection products={products} orders={orders} categories={categories} />
+        </div>
+      )}
 
       {/* 5. STORE INFO CONFIGURATION */}
       {activeTab === 'store' && (

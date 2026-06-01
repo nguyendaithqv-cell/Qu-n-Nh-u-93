@@ -14,6 +14,7 @@ export interface Product {
   name: string;
   categoryId: string;
   price: number;
+  cost: number; // Added cost field
   image: string; // Emoji character or URL
   description: string;
   isAvailable: boolean;
@@ -24,6 +25,7 @@ export interface Category {
   name: string;
   icon: string; // Emoji character or Lucide icon name
   sortOrder?: number;
+  type?: 'food' | 'drink';
 }
 
 export interface CartItem {

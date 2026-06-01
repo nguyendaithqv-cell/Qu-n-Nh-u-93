@@ -33,21 +33,21 @@ export function getCustomerCookie(): CustomerCookieData | null {
 
 // Initial data definition
 const DEFAULT_CATEGORIES: Category[] = [
-  { id: 'khai_vi', name: 'Khai Vị', icon: '🥗', sortOrder: 0 },
-  { id: 'ca', name: 'Cá', icon: '🐟', sortOrder: 1 },
-  { id: 'muc', name: 'Mực', icon: '🦑', sortOrder: 2 },
-  { id: 'heo', name: 'Heo', icon: '🐖', sortOrder: 3 },
-  { id: 'be-bo', name: 'Bê - Bò', icon: '🐂', sortOrder: 4 },
-  { id: 'de', name: 'Dê', icon: '🐐', sortOrder: 5 },
-  { id: 'luon', name: 'Lươn', icon: '🐍', sortOrder: 6 },
-  { id: 'ech', name: 'Ếch', icon: '🐸', sortOrder: 7 },
-  { id: 'tom', name: 'Tôm', icon: '🦐', sortOrder: 8 },
-  { id: 'oc-huong', name: 'Ốc Hương', icon: '🐚', sortOrder: 9 },
-  { id: 'lau', name: 'Lẩu', icon: '🍲', sortOrder: 10 },
-  { id: 'com-mi-goi', name: 'Cơm - Mì - Gỏi', icon: '🍛', sortOrder: 11 },
-  { id: 'nuong-tai-ban', name: 'Nướng Tại Bàn', icon: '🔥', sortOrder: 12 },
-  { id: 'mon-an-kem', name: 'Món Ăn Kèm', icon: '🍚', sortOrder: 13 },
-  { id: 'do-uong', name: 'Đồ Uống', icon: '🍺', sortOrder: 14 }
+  { id: 'khai_vi', name: 'Khai Vị', icon: '🥗', sortOrder: 0, type: 'food' },
+  { id: 'ca', name: 'Cá', icon: '🐟', sortOrder: 1, type: 'food' },
+  { id: 'muc', name: 'Mực', icon: '🦑', sortOrder: 2, type: 'food' },
+  { id: 'heo', name: 'Heo', icon: '🐖', sortOrder: 3, type: 'food' },
+  { id: 'be-bo', name: 'Bê - Bò', icon: '🐂', sortOrder: 4, type: 'food' },
+  { id: 'de', name: 'Dê', icon: '🐐', sortOrder: 5, type: 'food' },
+  { id: 'luon', name: 'Lươn', icon: '🐍', sortOrder: 6, type: 'food' },
+  { id: 'ech', name: 'Ếch', icon: '🐸', sortOrder: 7, type: 'food' },
+  { id: 'tom', name: 'Tôm', icon: '🦐', sortOrder: 8, type: 'food' },
+  { id: 'oc-huong', name: 'Ốc Hương', icon: '🐚', sortOrder: 9, type: 'food' },
+  { id: 'lau', name: 'Lẩu', icon: '🍲', sortOrder: 10, type: 'food' },
+  { id: 'com-mi-goi', name: 'Cơm - Mì - Gỏi', icon: '🍛', sortOrder: 11, type: 'food' },
+  { id: 'nuong-tai-ban', name: 'Nướng Tại Bàn', icon: '🔥', sortOrder: 12, type: 'food' },
+  { id: 'mon-an-kem', name: 'Món Ăn Kèm', icon: '🍚', sortOrder: 13, type: 'food' },
+  { id: 'do-uong', name: 'Đồ Uống', icon: '🍺', sortOrder: 14, type: 'drink' }
 ];
 
 const DEFAULT_PRODUCTS: Product[] = [
