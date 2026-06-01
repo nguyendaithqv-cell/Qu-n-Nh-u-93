@@ -165,12 +165,8 @@ export default function MobileSimulator({
                           product.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   }).sort((a, b) => {
-    if (activeCategory === 'all') {
-      const categoryIndexA = categories.findIndex(c => c.id === a.categoryId);
-      const categoryIndexB = categories.findIndex(c => c.id === b.categoryId);
-      return categoryIndexA - categoryIndexB;
-    }
-    return 0;
+    // Sắp xếp theo giá bán từ nhỏ đến lớn
+    return a.price - b.price;
   });
 
   // Cart operations
