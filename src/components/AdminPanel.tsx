@@ -58,7 +58,6 @@ export default function AdminPanel({
   // Navigation
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'categories' | 'promotions' | 'store' | 'customers'>('orders');
   const [searchQuery, setSearchQuery] = useState('');
-  const [orderSearchQuery, setOrderSearchQuery] = useState('');
 
   // Sub States
   const [editingConfig, setEditingConfig] = useState<StoreConfig>({ ...storeConfig });
@@ -106,41 +105,75 @@ export default function AdminPanel({
   const [promotionToDelete, setPromotionToDelete] = useState<Promotion | null>(null);
 
   type TimeRange = 'all' | 'today' | 'yesterday' | 'week_this' | 'week_last' | 'month_this' | 'month_last' | 'year_this' | 'year_last';
-  const [revenueTimeRange, setRevenueTimeRange] = useState<TimeRange>('all');
   
-  // Filter and Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const [filterStatus, setFilterStatus] = useState<OrderStatus | 'all'>('all');
-  const [filterPaymentStatus, setFilterPaymentStatus] = useState<PaymentStatus | 'all'>('all');
-  const [orderTimeRange, setOrderTimeRange] = useState<TimeRange>('all');
-  const [filterStatsPaymentStatus, setFilterStatsPaymentStatus] = useState<PaymentStatus | 'all'>('all');
+  // Unified master filters state
+  const [masterFilters, setMasterFilters] = useState<{
+    timeRange: TimeRange;
+    status: OrderStatus | 'all';
+    paymentStatus: PaymentStatus | 'all';
+    search: string;
+  }>({
+    timeRange: 'all',
+    status: 'all',
+    paymentStatus: 'all',
+    search: ''
+  });
+  
   const ITEMS_PER_PAGE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(todayStart.getDate() - 1);
+  const thisWeekStart = new Date(todayStart); thisWeekStart.setDate(todayStart.getDate() - todayStart.getDay());
+  const lastWeekStart = new Date(thisWeekStart); lastWeekStart.setDate(thisWeekStart.getDate() - 7);
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const thisYearStart = new Date(now.getFullYear(), 0, 1);
+  const lastYearStart = new Date(now.getFullYear() - 1, 0, 1);
+
+  const isInRange = (date: Date) => {
+    if (masterFilters.timeRange === 'all') return true;
+    if (masterFilters.timeRange === 'today') return date >= todayStart;
+    if (masterFilters.timeRange === 'yesterday') return date >= yesterdayStart && date < todayStart;
+    if (masterFilters.timeRange === 'week_this') return date >= thisWeekStart;
+    if (masterFilters.timeRange === 'week_last') return date >= lastWeekStart && date < thisWeekStart;
+    if (masterFilters.timeRange === 'month_this') return date >= thisMonthStart;
+    if (masterFilters.timeRange === 'month_last') return date >= lastMonthStart && date < thisMonthStart;
+    if (masterFilters.timeRange === 'year_this') return date >= thisYearStart;
+    if (masterFilters.timeRange === 'year_last') return date >= lastYearStart && date < thisYearStart;
+    return true;
+  };
+
+  const getOrdersMatchingBaseFilters = (includeStatus: boolean, includePayment: boolean) => orders.filter(o => {
+     const matchesStatus = !includeStatus || (masterFilters.status === 'all' || o.status === masterFilters.status);
+     const matchesPayment = !includePayment || (masterFilters.paymentStatus === 'all' || (o.paymentStatus || 'unpaid') === masterFilters.paymentStatus);
+     const matchesTime = isInRange(new Date(o.createdAt));
+     const matchesSearch = !masterFilters.search || 
+        o.billCode.toLowerCase().includes(masterFilters.search.toLowerCase()) || 
+        o.customerName.toLowerCase().includes(masterFilters.search.toLowerCase()) || 
+        o.customerPhone.includes(masterFilters.search);
+     return matchesStatus && matchesPayment && matchesTime && matchesSearch;
+  });
+
+  const ordersForStatusCounts = getOrdersMatchingBaseFilters(false, true);
+  const ordersForPaymentCounts = getOrdersMatchingBaseFilters(true, false);
 
   const calculateStats = () => {
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(todayStart.getDate() - 1);
-    const thisWeekStart = new Date(todayStart); thisWeekStart.setDate(todayStart.getDate() - todayStart.getDay());
-    const lastWeekStart = new Date(thisWeekStart); lastWeekStart.setDate(thisWeekStart.getDate() - 7);
-    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const thisYearStart = new Date(now.getFullYear(), 0, 1);
-    const lastYearStart = new Date(now.getFullYear() - 1, 0, 1);
-
     const isInRange = (date: Date) => {
-      if (revenueTimeRange === 'all') return true;
-      if (revenueTimeRange === 'today') return date >= todayStart;
-      if (revenueTimeRange === 'yesterday') return date >= yesterdayStart && date < todayStart;
-      if (revenueTimeRange === 'week_this') return date >= thisWeekStart;
-      if (revenueTimeRange === 'week_last') return date >= lastWeekStart && date < thisWeekStart;
-      if (revenueTimeRange === 'month_this') return date >= thisMonthStart;
-      if (revenueTimeRange === 'month_last') return date >= lastMonthStart && date < thisMonthStart;
-      if (revenueTimeRange === 'year_this') return date >= thisYearStart;
-      if (revenueTimeRange === 'year_last') return date >= lastYearStart && date < thisYearStart;
+      if (masterFilters.timeRange === 'all') return true;
+      if (masterFilters.timeRange === 'today') return date >= todayStart;
+      if (masterFilters.timeRange === 'yesterday') return date >= yesterdayStart && date < todayStart;
+      if (masterFilters.timeRange === 'week_this') return date >= thisWeekStart;
+      if (masterFilters.timeRange === 'week_last') return date >= lastWeekStart && date < thisWeekStart;
+      if (masterFilters.timeRange === 'month_this') return date >= thisMonthStart;
+      if (masterFilters.timeRange === 'month_last') return date >= lastMonthStart && date < thisMonthStart;
+      if (masterFilters.timeRange === 'year_this') return date >= thisYearStart;
+      if (masterFilters.timeRange === 'year_last') return date >= lastYearStart && date < thisYearStart;
       return true;
     };
 
-    const filteredOrders = orders.filter(o => isInRange(new Date(o.createdAt)) && (filterStatsPaymentStatus === 'all' || o.paymentStatus === filterStatsPaymentStatus));
+    const filteredOrders = orders.filter(o => isInRange(new Date(o.createdAt)) && (masterFilters.paymentStatus === 'all' || o.paymentStatus === masterFilters.paymentStatus));
     
     const totalRev = filteredOrders.filter(o => o.status === 'completed').reduce((sum, o) => sum + o.totalAmount, 0);
     const newOrdCount = filteredOrders.filter(o => o.status === 'pending').length;
@@ -608,8 +641,8 @@ export default function AdminPanel({
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xs uppercase font-black text-slate-500 tracking-wider">Thông số tổng quan</h3>
             <select
-              value={revenueTimeRange}
-              onChange={(e) => setRevenueTimeRange(e.target.value as TimeRange)}
+              value={masterFilters.timeRange}
+              onChange={(e) => setMasterFilters(prev => ({ ...prev, timeRange: e.target.value as TimeRange }))}
               className="text-[11px] font-bold text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-1.5 outline-none cursor-pointer shadow-sm hover:border-slate-300 transition-colors"
             >
               <option value="all">Tất cả thời gian</option>
@@ -621,16 +654,6 @@ export default function AdminPanel({
               <option value="month_last">Tháng trước</option>
               <option value="year_this">Năm này</option>
               <option value="year_last">Năm trước</option>
-            </select>
-            <select
-              value={filterStatsPaymentStatus}
-              onChange={(e) => setFilterStatsPaymentStatus(e.target.value as PaymentStatus | 'all')}
-              className="text-[11px] font-bold text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-1.5 outline-none cursor-pointer shadow-sm hover:border-slate-300 transition-colors"
-            >
-              <option value="all">Tất cả TT</option>
-              <option value="paid">Đã TT</option>
-              <option value="unpaid">Chưa TT</option>
-              <option value="debt">Công Nợ</option>
             </select>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -746,59 +769,37 @@ export default function AdminPanel({
               <input
                 type="text"
                 placeholder="Tìm đơn hàng..."
-                value={orderSearchQuery}
-                onChange={(e) => { setOrderSearchQuery(e.target.value); setCurrentPage(1); }}
+                value={masterFilters.search}
+                onChange={(e) => { setMasterFilters(prev => ({ ...prev, search: e.target.value })); setCurrentPage(1); }}
                 className="bg-white border border-slate-200 rounded-lg p-1 font-bold outline-none w-32"
               />
-              <select value={orderTimeRange} onChange={(e) => { setOrderTimeRange(e.target.value as TimeRange); setCurrentPage(1); }} className="bg-white border border-slate-200 rounded-lg p-1 font-bold uppercase outline-none">
-                <option value="all">Thời gian: Tất cả</option>
-                <option value="today">Hôm nay</option>
-                <option value="yesterday">Hôm qua</option>
-                <option value="week_this">Tuần này</option>
-                <option value="month_this">Tháng này</option>
+              <select value={masterFilters.status} onChange={(e) => { setMasterFilters(prev => ({ ...prev, status: e.target.value as any })); setCurrentPage(1); }} className="bg-white border border-slate-200 rounded-lg p-1 font-bold uppercase outline-none">
+                <option value="all">Trạng thái: Tất cả ({ordersForStatusCounts.length})</option>
+                <option value="pending">Chờ duyệt ({ordersForStatusCounts.filter(o => o.status === 'pending').length})</option>
+                <option value="preparing">Chế biến ({ordersForStatusCounts.filter(o => o.status === 'preparing').length})</option>
+                <option value="delivering">Đang giao ({ordersForStatusCounts.filter(o => o.status === 'delivering').length})</option>
+                <option value="completed">Đã giao ({ordersForStatusCounts.filter(o => o.status === 'completed').length})</option>
+                <option value="cancelled">Đã hủy ({ordersForStatusCounts.filter(o => o.status === 'cancelled').length})</option>
               </select>
-              <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value as any); setCurrentPage(1); }} className="bg-white border border-slate-200 rounded-lg p-1 font-bold uppercase outline-none">
-                <option value="all">Trạng thái: Tất cả</option>
-                <option value="pending">Chờ duyệt</option>
-                <option value="preparing">Chế biến</option>
-                <option value="delivering">Đang giao</option>
-                <option value="completed">Đã giao</option>
-                <option value="cancelled">Đã hủy</option>
-              </select>
-              <select value={filterPaymentStatus} onChange={(e) => { setFilterPaymentStatus(e.target.value as any); setCurrentPage(1); }} className="bg-white border border-slate-200 rounded-lg p-1 font-bold uppercase outline-none">
-                <option value="all">Thanh toán: Tất cả</option>
-                <option value="unpaid">Chưa TT</option>
-                <option value="paid">Đã TT</option>
-                <option value="debt">Ghi nợ</option>
+              <select value={masterFilters.paymentStatus} onChange={(e) => { setMasterFilters(prev => ({ ...prev, paymentStatus: e.target.value as any })); setCurrentPage(1); }} className="bg-white border border-slate-200 rounded-lg p-1 font-bold uppercase outline-none">
+                <option value="all">Thanh toán: Tất cả ({ordersForPaymentCounts.length})</option>
+                <option value="unpaid">Chưa TT ({ordersForPaymentCounts.filter(o => (o.paymentStatus || 'unpaid') === 'unpaid').length})</option>
+                <option value="paid">Đã TT ({ordersForPaymentCounts.filter(o => (o.paymentStatus || 'unpaid') === 'paid').length})</option>
+                <option value="debt">Ghi nợ ({ordersForPaymentCounts.filter(o => (o.paymentStatus || 'unpaid') === 'debt').length})</option>
               </select>
             </div>
           </div>
 
           {(() => {
-            const now = new Date();
-            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(todayStart.getDate() - 1);
-            const thisWeekStart = new Date(todayStart); thisWeekStart.setDate(todayStart.getDate() - todayStart.getDay());
-            const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-            const isInRange = (date: Date) => {
-              if (orderTimeRange === 'all') return true;
-              if (orderTimeRange === 'today') return date >= todayStart;
-              if (orderTimeRange === 'yesterday') return date >= yesterdayStart && date < todayStart;
-              if (orderTimeRange === 'week_this') return date >= thisWeekStart;
-              if (orderTimeRange === 'month_this') return date >= thisMonthStart;
-              return true;
-            };
-
             const filteredOrders = orders
               .filter(o => 
-                (filterStatus === 'all' || o.status === filterStatus) &&
-                (filterPaymentStatus === 'all' || (o.paymentStatus || 'unpaid') === filterPaymentStatus) &&
+                (masterFilters.status === 'all' || o.status === masterFilters.status) &&
+                (masterFilters.paymentStatus === 'all' || (o.paymentStatus || 'unpaid') === masterFilters.paymentStatus) &&
                 isInRange(new Date(o.createdAt)) &&
-                (!orderSearchQuery || 
-                  o.billCode.toLowerCase().includes(orderSearchQuery.toLowerCase()) || 
-                  o.customerName.toLowerCase().includes(orderSearchQuery.toLowerCase()) || 
-                  o.customerPhone.includes(orderSearchQuery))
+                (!masterFilters.search || 
+                  o.billCode.toLowerCase().includes(masterFilters.search.toLowerCase()) || 
+                  o.customerName.toLowerCase().includes(masterFilters.search.toLowerCase()) || 
+                  o.customerPhone.includes(masterFilters.search))
               )
               .sort((a,b) => b.createdAt.localeCompare(a.createdAt));
             
