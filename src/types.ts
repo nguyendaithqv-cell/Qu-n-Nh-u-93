@@ -74,6 +74,7 @@ export interface StoreConfig {
   openHours: string;
   customQrCodeUrl?: string;
   logoUrl?: string;
+  theme?: 'standard' | 'vista' | 'cyberpunk' | 'win11';
 }
 
 export interface Promotion {

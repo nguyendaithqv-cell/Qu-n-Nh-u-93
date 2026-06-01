@@ -147,21 +147,8 @@ export default function MobileSimulator({
   const [copiedBillText, setCopiedBillText] = useState<boolean>(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState<boolean>(false);
 
-  // Active theme state
-  const [customerTheme, setCustomerTheme] = useState<'standard' | 'vista' | 'cyberpunk' | 'win11'>(
-    () => (localStorage.getItem('admin-panel-theme') as any) || 'standard'
-  );
-
-  // Poll for theme changes (so that if it changes in Admin Panel, the phone matches instantly)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const current = (localStorage.getItem('admin-panel-theme') as any) || 'standard';
-      if (current !== customerTheme) {
-        setCustomerTheme(current);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [customerTheme]);
+  // Active theme state (flows directly from global store configuration database)
+  const customerTheme = storeConfig.theme || 'standard';
 
   const themeStyles = {
     standard: {

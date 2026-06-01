@@ -763,7 +763,8 @@ const DEFAULT_STORE_CONFIG: StoreConfig = {
   bankAccount: "1023456789",
   bankAccountName: "NGUYEN VAN BEP VIET",
   openHours: "10:00 - 23:30",
-  customQrCodeUrl: ""
+  customQrCodeUrl: "",
+  theme: "standard"
 };
 
 const DEFAULT_ORDERS: Order[] = [

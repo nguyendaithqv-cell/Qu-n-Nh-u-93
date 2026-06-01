@@ -68,7 +68,7 @@ export default function AdminPanel({
 
   // System Theme & Settings States
   const [adminTheme, setAdminTheme] = useState<'standard' | 'vista' | 'cyberpunk' | 'win11'>(
-    () => (localStorage.getItem('admin-panel-theme') as any) || 'standard'
+    () => storeConfig.theme || (localStorage.getItem('admin-panel-theme') as any) || 'standard'
   );
   const [audioEnabled, setAudioEnabled] = useState<boolean>(
     () => localStorage.getItem('system-audio-enabled') !== 'false'
@@ -83,6 +83,21 @@ export default function AdminPanel({
   useEffect(() => {
     localStorage.setItem('admin-panel-theme', adminTheme);
   }, [adminTheme]);
+
+  // Sync adminTheme when storeConfig.theme loads or changes in real-time database
+  useEffect(() => {
+    if (storeConfig.theme && storeConfig.theme !== adminTheme) {
+      setAdminTheme(storeConfig.theme);
+    }
+  }, [storeConfig.theme]);
+
+  const handleThemeChange = (newTheme: 'standard' | 'vista' | 'cyberpunk' | 'win11') => {
+    setAdminTheme(newTheme);
+    onUpdateStoreConfig({
+      ...storeConfig,
+      theme: newTheme
+    });
+  };
 
   useEffect(() => {
     localStorage.setItem('system-audio-enabled', audioEnabled ? 'true' : 'false');
@@ -2902,7 +2917,7 @@ export default function AdminPanel({
               
               {/* Option 1: Standard theme */}
               <div 
-                onClick={() => setAdminTheme('standard')}
+                onClick={() => handleThemeChange('standard')}
                 className={`border rounded-xl p-4 cursor-pointer transition-all duration-300 relative group flex flex-col justify-between min-h-[140px] ${
                   adminTheme === 'standard' 
                     ? 'border-orange-500 bg-orange-50/20 ring-1 ring-orange-500 shadow-sm' 
@@ -2929,7 +2944,7 @@ export default function AdminPanel({
 
               {/* Option 2: Vista theme */}
               <div 
-                onClick={() => setAdminTheme('vista')}
+                onClick={() => handleThemeChange('vista')}
                 className={`border rounded-xl p-4 cursor-pointer transition-all duration-300 relative group flex flex-col justify-between min-h-[140px] ${
                   adminTheme === 'vista' 
                     ? 'border-sky-500 bg-sky-50/25 ring-1 ring-sky-500 shadow-sm' 
@@ -2956,7 +2971,7 @@ export default function AdminPanel({
 
               {/* Option 3: Cyberpunk theme */}
               <div 
-                onClick={() => setAdminTheme('cyberpunk')}
+                onClick={() => handleThemeChange('cyberpunk')}
                 className={`border rounded-xl p-4 cursor-pointer transition-all duration-300 relative group flex flex-col justify-between min-h-[140px] ${
                   adminTheme === 'cyberpunk' 
                     ? 'border-cyan-400 bg-cyan-950/20 ring-1 ring-cyan-400 shadow-sm' 
@@ -2983,7 +2998,7 @@ export default function AdminPanel({
 
               {/* Option 4: Windows 11 theme */}
               <div 
-                onClick={() => setAdminTheme('win11')}
+                onClick={() => handleThemeChange('win11')}
                 className={`border rounded-xl p-4 cursor-pointer transition-all duration-300 relative group flex flex-col justify-between min-h-[140px] ${
                   adminTheme === 'win11' 
                     ? 'border-[#0078d4] bg-[#0078d4]/10 ring-1 ring-[#0078d4] shadow-sm' 
