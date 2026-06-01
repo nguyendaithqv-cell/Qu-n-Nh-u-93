@@ -28,7 +28,8 @@ import {
   Cpu,
   Volume2,
   Printer,
-  Laptop
+  Laptop,
+  GripVertical
 } from 'lucide-react';
 import { Product, Category, Order, OrderStatus, PaymentStatus, StoreConfig, Promotion, Customer } from '../types';
 import ReportSection from './ReportSection';
@@ -110,6 +111,9 @@ export default function AdminPanel({
   useEffect(() => {
     localStorage.setItem('system-auto-print', autoPrint ? 'true' : 'false');
   }, [autoPrint]);
+
+  // Drag and drop categories state
+  const [draggedCategoryIndex, setDraggedCategoryIndex] = useState<number | null>(null);
 
   // Sub States
   const [editingConfig, setEditingConfig] = useState<StoreConfig>({ ...storeConfig });
@@ -714,7 +718,7 @@ export default function AdminPanel({
       icon: 'text-orange-605',
       divider: 'border-slate-100',
       titleSpin: 'text-orange-600 animate-spin-slow',
-      panelTitle: 'Quản Lý Hệ Thống KHAI VỊ',
+      panelTitle: storeConfig.name ? `Trang Quản Lý - ${storeConfig.name}` : 'Trang Quản Lý',
       subText: 'Thống số tổng quan'
     },
     vista: {
@@ -739,7 +743,7 @@ export default function AdminPanel({
       icon: 'text-sky-600 drop-shadow-[0_0.5px_0.5px_rgba(255,255,255,0.85)]',
       divider: 'border-slate-200/80',
       titleSpin: 'text-sky-600 animate-pulse',
-      panelTitle: 'IE explorer.exe [Hệ Thống Khai Vị - Aero Glass v2.0]',
+      panelTitle: `Trang Quản Lý Aero - ${storeConfig.name || 'Cửa Hàng'}`,
       subText: 'Thống số tổng quan'
     },
     cyberpunk: {
@@ -764,7 +768,7 @@ export default function AdminPanel({
       icon: 'text-[#66fcf1] drop-shadow-[0_0_4px_rgba(102,252,241,0.2)]',
       divider: 'border-[#2c3540]',
       titleSpin: 'text-[#66fcf1] animate-pulse shadow-glow',
-      panelTitle: '[ROOT@PORT_3000:~# ADMIN_WORKSPACE]',
+      panelTitle: `Admin Workspace - ${storeConfig.name || 'Cửa Hàng'}`,
       subText: 'SYSTEM_OVERVIEW_KPI'
     },
     win11: {
@@ -789,7 +793,7 @@ export default function AdminPanel({
       icon: 'text-[#0078d4]',
       divider: 'border-zinc-200',
       titleSpin: 'text-[#0078d4] animate-pulse',
-      panelTitle: 'HostPool.msi [Hệ Thống Khai Vị - Fluent Studio v11]',
+      panelTitle: `Trang Quản Lý - ${storeConfig.name || 'Cửa Hàng'}`,
       subText: 'Thông số hệ thống (Mica View)'
     }
   };
@@ -2212,9 +2216,46 @@ export default function AdminPanel({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {categories.map((cat, idx) => {
               const count = products.filter(p => p.categoryId === cat.id).length;
+              const isBeingDragged = draggedCategoryIndex === idx;
               return (
-                <div key={cat.id} className="bg-white p-4 border border-slate-200 rounded-2xl shadow-xs flex items-center justify-between gap-3">
+                <div 
+                  key={cat.id} 
+                  draggable={true}
+                  onDragStart={(e) => {
+                    setDraggedCategoryIndex(idx);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (draggedCategoryIndex === null || draggedCategoryIndex === idx) return;
+                    
+                    const updated = [...categories];
+                    const itemToMove = updated[draggedCategoryIndex];
+                    updated.splice(draggedCategoryIndex, 1);
+                    updated.splice(idx, 0, itemToMove);
+                    
+                    setDraggedCategoryIndex(idx);
+                    
+                    const finalized = updated.map((catItem, i) => ({
+                      ...catItem,
+                      sortOrder: i
+                    }));
+                    onUpdateCategories(finalized);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedCategoryIndex(null);
+                  }}
+                  className={`p-4 border rounded-2xl flex items-center justify-between gap-3 transition-all duration-200 select-none ${
+                    isBeingDragged 
+                      ? 'border-dashed border-orange-400 bg-orange-50/25 scale-98 opacity-50 shadow-inner' 
+                      : 'bg-white border-slate-200 shadow-xs hover:shadow-sm hover:border-slate-350'
+                  }`}
+                >
                   <div className="flex items-center gap-3">
+                    {/* Grip handle for visual feedback */}
+                    <div className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 p-1 shrink-0" title="Giữ và kéo để đổi thứ tự">
+                      <GripVertical className="w-3.5 h-3.5" />
+                    </div>
                     <span className="text-3xl select-none bg-orange-50 p-2 rounded-xl shrink-0">{cat.icon}</span>
                     <div>
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -2611,7 +2652,7 @@ export default function AdminPanel({
         <form onSubmit={handleSaveStoreConfig} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 animate-fade-in text-xs">
           
           <h2 className="font-extrabold text-slate-800 text-sm uppercase tracking-wide border-b border-slate-100 pb-2 mb-4 flex items-center gap-1.5">
-            <Settings className="w-4 h-4 text-orange-600" /> Cấu hình thông tin cơ sở mâm súp
+            <Settings className="w-4 h-4 text-orange-600" /> Cấu hình thông tin cửa hàng / quán
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3048,7 +3089,7 @@ export default function AdminPanel({
                     />
                   </div>
                   <p className="text-[10px] text-slate-400 leading-normal">
-                    Tự động chuông "Ding-Dong" êm ái khi phát hiện có bất kỳ khách hàng nào vừa gửi đơn đặt món mâm súp live ở bên ngoài.
+                    Tự động chuông "Ding-Dong" êm ái khi phát hiện có bất kỳ khách hàng nào vừa gửi đơn đặt món trực tuyến ở bên ngoài.
                   </p>
                 </div>
                 <div>
@@ -3096,7 +3137,7 @@ export default function AdminPanel({
                     />
                   </div>
                   <p className="text-[10px] text-slate-400 leading-normal">
-                    Khi chuyển bất cứ đơn hàng nào sang "Đang chuẩn bị", hệ thống tự động bung drawer in nhiệt mini 58mm/80mm để dán lên mâm súp nhanh chóng.
+                    Khi chuyển bất cứ đơn hàng nào sang "Đang chuẩn bị", hệ thống tự động bung drawer in nhiệt mini 58mm/80mm để dán lên đơn phục vụ nhanh chóng.
                   </p>
                 </div>
                 <div className="bg-slate-100 text-slate-500 rounded p-2 text-[9px] font-sans flex items-center gap-1">
@@ -3127,7 +3168,7 @@ export default function AdminPanel({
                   <div className="space-y-1 text-[10px] mt-2">
                     <div className="flex justify-between"><span>Cơ sở dữ liệu đám mây:</span> <span className="font-black text-emerald-600">CONNECTED (LIVE)</span></div>
                     <div className="flex justify-between"><span>Thời gian đồng bộ trễ:</span> <span className="font-mono text-indigo-600">~15ms</span></div>
-                    <div className="flex justify-between"><span>Phiên bản mâm súp:</span> <span className="font-mono text-emerald-600">v3.4.1 (Stable Build)</span></div>
+                    <div className="flex justify-between"><span>Phiên bản hệ thống:</span> <span className="font-mono text-emerald-600">v3.4.1 (Stable Build)</span></div>
                   </div>
                 </div>
                 <div className="flex justify-between items-center bg-emerald-50 text-emerald-800 text-[9px] rounded p-1 px-2 font-black uppercase tracking-wider">
