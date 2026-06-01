@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Product, Order, Category } from '../types';
-import { Calendar, ArrowUpDown, ArrowUp, ArrowDown, Clock, Filter, TrendingUp } from 'lucide-react';
+import { Calendar, ArrowUpDown, ArrowUp, ArrowDown, Clock, Filter, TrendingUp, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface ReportSectionProps {
   products: Product[];
@@ -165,9 +166,110 @@ export default function ReportSection({ products, orders, categories }: ReportSe
     );
   };
 
+  // Export to Excel function including custom totals and detailed items
+  const exportToExcel = () => {
+    let timeStr = "Tất cả thời gian";
+    if (timeRange === 'today') timeStr = "Hôm nay";
+    else if (timeRange === 'yesterday') timeStr = "Hôm qua";
+    else if (timeRange === '7days') timeStr = "7 ngày qua";
+    else if (timeRange === 'month_this') timeStr = "Tháng này";
+    else if (timeRange === 'month_last') timeStr = "Tháng trước";
+    else if (timeRange === 'custom') timeStr = `Từ ngày ${startDate} đến ngày ${endDate}`;
+
+    // Create final array of arrays for Excel export
+    const wsData: any[][] = [
+      ["BÁO CÁO DOANH THU & LỢI NHUẬN BANH BÈ BIA VÀNG"],
+      ["Thời gian áp dụng:", timeStr],
+      ["Ngày xuất dữ liệu:", new Date().toLocaleString('vi-VN')],
+      [], // Empty row separator
+      ["I. TỔNG HỢP NHÓM SẢN PHẨM (TỔNG HỢP CHUNG)"],
+      ["Phân Loại", "Số Lượng Bán", "Doanh Thu (đ)", "Chi Phí (đ)", "Lợi Nhuận (đ)"]
+    ];
+
+    const fTotal = reportData.totals.food;
+    const dTotal = reportData.totals.drink;
+    const grandQty = fTotal.qty + dTotal.qty;
+    const grandRev = fTotal.revenue + dTotal.revenue;
+    const grandCost = fTotal.cost + dTotal.cost;
+    const grandProfit = fTotal.profit + dTotal.profit;
+
+    wsData.push(["Món Ăn (🥗)", fTotal.qty, fTotal.revenue, fTotal.cost, fTotal.profit]);
+    wsData.push(["Đồ Uống / Bia (🍺)", dTotal.qty, dTotal.revenue, dTotal.cost, dTotal.profit]);
+    wsData.push(["TỔNG CỘNG CHUNG", grandQty, grandRev, grandCost, grandProfit]);
+    wsData.push([]); // Padding row
+    wsData.push([]); // Padding row
+
+    wsData.push(["II. CHI TIẾT SỐ LIỆU TỪNG SẢN PHẨM"]);
+    wsData.push(["STT", "Tên Sản Phẩm", "Danh Mục", "Phân Loại", "SL Bán", "Doanh Thu (đ)", "Chi Phí (đ)", "Lợi Nhuận (đ)"]);
+
+    sortedSales.forEach((s, index) => {
+      const prod = products.find(p => p.id === s.id);
+      const cat = prod ? categories.find(c => c.id === prod.categoryId) : undefined;
+      const isD = prod ? getGroupType(prod, cat) === 'drink' : false;
+      const typeLabel = isD ? "Đồ uống" : "Đồ ăn";
+
+      wsData.push([
+        index + 1,
+        prod?.name || '',
+        s.categoryName,
+        typeLabel,
+        s.qty,
+        s.revenue,
+        s.cost,
+        s.profit
+      ]);
+    });
+
+    // Create the Excel worksheet
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Style column widths
+    ws['!cols'] = [
+      { wch: 8 },   // A: STT / Loại
+      { wch: 32 },  // B: Tên sản phẩm
+      { wch: 18 },  // C: Danh mục
+      { wch: 16 },  // D: Phân loại
+      { wch: 12 },  // E: SL Bán
+      { wch: 18 },  // F: Doanh thu
+      { wch: 18 },  // G: Chi phí (Cost)
+      { wch: 18 }   // H: Lợi nhuận
+    ];
+
+    // Create workbook and package the sheet
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Báo Cáo Doanh Thu");
+
+    // File name format
+    const fileDateStr = new Date().toISOString().split('T')[0];
+    const rangeSlug = timeRange === 'custom' ? `${startDate}_to_${endDate}` : timeRange;
+    const filename = `Bao_Cao_Doanh_Thu_Bia_Vang_${rangeSlug}_${fileDateStr}.xlsx`;
+
+    // Write file to device download directory
+    XLSX.writeFile(wb, filename);
+  };
+
   return (
     <div className="space-y-6">
       
+      {/* HEADER SECTION WITH TITLE AND EXPORT BUTTON */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+        <div>
+          <h2 className="font-extrabold text-slate-800 text-sm uppercase tracking-wide flex items-center gap-1.5">
+            <TrendingUp className="w-5 h-5 text-orange-600" /> Báo cáo doanh thu & lợi nhuận
+          </h2>
+          <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5 tracking-wider">
+            Thống kê doanh số, chi phí & hiệu quả kinh doanh
+          </p>
+        </div>
+        <button
+          onClick={exportToExcel}
+          type="button"
+          className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold pb-2 pt-2 px-4 rounded-xl shadow-sm hover:shadow-md transition-all uppercase text-[11px] tracking-wider select-none shrink-0 cursor-pointer"
+        >
+          <FileSpreadsheet className="w-4 h-4" /> Xuất Báo Cáo Excel
+        </button>
+      </div>
+
       {/* TIME RANGE FILTER BAR */}
       <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
