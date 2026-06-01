@@ -14,7 +14,7 @@ export interface Product {
   name: string;
   categoryId: string;
   price: number;
-  cost: number; // Added cost field
+  cost?: number; // Added cost field
   image: string; // Emoji character or URL
   description: string;
   isAvailable: boolean;
@@ -73,6 +73,7 @@ export interface StoreConfig {
   bankAccountName: string;
   openHours: string;
   customQrCodeUrl?: string;
+  logoUrl?: string;
 }
 
 export interface Promotion {

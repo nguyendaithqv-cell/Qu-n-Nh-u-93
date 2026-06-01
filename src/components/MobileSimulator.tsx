@@ -147,6 +147,135 @@ export default function MobileSimulator({
   const [copiedBillText, setCopiedBillText] = useState<boolean>(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState<boolean>(false);
 
+  // Active theme state
+  const [customerTheme, setCustomerTheme] = useState<'standard' | 'vista' | 'cyberpunk' | 'win11'>(
+    () => (localStorage.getItem('admin-panel-theme') as any) || 'standard'
+  );
+
+  // Poll for theme changes (so that if it changes in Admin Panel, the phone matches instantly)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const current = (localStorage.getItem('admin-panel-theme') as any) || 'standard';
+      if (current !== customerTheme) {
+        setCustomerTheme(current);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [customerTheme]);
+
+  const themeStyles = {
+    standard: {
+      pageWrapper: 'w-full h-full flex flex-col bg-slate-50 relative',
+      headerBg: 'pt-6 pb-4 px-5 bg-white border-b border-slate-100 z-10 sticky top-0 shadow-xs',
+      logoText: 'text-slate-800 italic font-black text-xl tracking-tight block uppercase',
+      logoSubtext: 'text-[10px] text-orange-600 uppercase font-extrabold tracking-widest block',
+      logoLetterBg: 'bg-orange-600 text-white shadow-md shadow-orange-100',
+      textMuted: 'text-[10px] font-semibold text-slate-400 tracking-wider uppercase',
+      textMain: 'text-slate-800',
+      titleText: 'text-slate-800 font-extrabold',
+      card: 'bg-white p-3 rounded-2xl shadow-xs border border-slate-100 hover:border-orange-200 transition-colors flex gap-3',
+      badge: 'bg-orange-50 text-orange-600 border border-orange-100 font-extrabold',
+      accentText: 'text-orange-600 font-extrabold',
+      btnAccent: 'px-2.5 py-1 bg-orange-600 hover:bg-orange-700 text-white font-extrabold rounded-lg',
+      btnAccentLg: 'w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-extrabold rounded-xl shadow-md transition-colors uppercase tracking-wider',
+      btnSec: 'bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold',
+      tabActive: 'bg-orange-600 text-white shadow-md shadow-orange-100',
+      tabInactive: 'bg-slate-100 text-slate-600 hover:bg-slate-201',
+      input: 'w-full bg-slate-100 border border-slate-200 text-slate-800 focus:ring-2 focus:ring-orange-200 focus:bg-white',
+      iconBg: 'bg-orange-50/70 text-orange-600',
+      cartBadge: 'bg-orange-600 text-white',
+      searchIcon: 'text-slate-400',
+      menuBg: 'bg-slate-50/70',
+      subtextClass: 'text-[9px] text-slate-400',
+      subtextClass2: 'text-[9px] text-slate-300',
+      divider: 'border-slate-100',
+      statusCardBg: 'bg-slate-50/70'
+    },
+    vista: {
+      pageWrapper: 'w-full h-full flex flex-col bg-gradient-to-br from-sky-100/30 via-slate-150 to-emerald-100/30 relative text-slate-800',
+      headerBg: 'pt-6 pb-4 px-5 bg-white/75 backdrop-blur-md border-b border-white/50 z-10 sticky top-0 shadow-[0_4px_12px_rgba(3,105,161,0.03),inset_0_1px_1px_rgba(255,255,255,0.7)]',
+      logoText: 'text-sky-900 font-black text-xl tracking-tight block italic drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]',
+      logoSubtext: 'text-[10px] text-sky-600 uppercase font-black tracking-widest block',
+      logoLetterBg: 'bg-gradient-to-b from-sky-400 to-sky-600 text-white shadow-md border border-white/30',
+      textMuted: 'text-[10px] font-bold text-slate-500 tracking-wider uppercase',
+      textMain: 'text-slate-800',
+      titleText: 'text-sky-950 font-black',
+      card: 'bg-white/70 backdrop-blur-md border border-white/60 shadow-[0_6px_15px_rgba(3,105,161,0.04),inset_0_1px_1px_rgba(255,255,255,0.7)] rounded-2xl p-3 flex gap-3 hover:translate-y-[-1px] transition-all duration-300',
+      badge: 'bg-sky-50 text-sky-700 border border-sky-200 font-black',
+      accentText: 'text-sky-600 font-black',
+      btnAccent: 'px-2.5 py-1 bg-gradient-to-b from-sky-400 via-sky-600 to-sky-700 hover:to-sky-650 text-white font-black border border-sky-600 relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-[50%] before:bg-white/20 rounded-lg',
+      btnAccentLg: 'w-full py-3 bg-gradient-to-b from-sky-400 via-sky-600 to-sky-700 hover:to-sky-650 text-white font-black border border-sky-600 relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-[50%] before:bg-white/20 rounded-xl shadow-md transition-colors uppercase tracking-wider',
+      btnSec: 'bg-gradient-to-b from-white to-slate-100/95 text-slate-705 border border-slate-250 hover:border-slate-350 shadow-xs font-bold rounded-lg',
+      tabActive: 'bg-gradient-to-b from-sky-400 via-sky-600 to-sky-700 text-white shadow-[0_2px_6px_rgba(3,105,161,0.25)] border border-sky-650 relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-[50%] before:bg-white/30 rounded-full',
+      tabInactive: 'bg-gradient-to-b from-white to-slate-100/90 hover:from-white hover:to-slate-50 text-sky-850 hover:text-sky-950 border border-slate-200/80 hover:border-slate-300 shadow-xs rounded-full',
+      input: 'w-full bg-white/80 border border-slate-250 hover:border-slate-350 focus:border-sky-500 text-slate-850 focus:bg-white focus:ring-1 focus:ring-sky-200 focus:outline-hidden',
+      iconBg: 'bg-sky-50 text-sky-600 border border-sky-100',
+      cartBadge: 'bg-sky-600 text-white border border-white/20',
+      searchIcon: 'text-sky-500/60',
+      menuBg: 'bg-transparent',
+      subtextClass: 'text-[9.5px] text-slate-500 font-black uppercase tracking-wider',
+      subtextClass2: 'text-[9px] text-emerald-600 font-bold uppercase',
+      divider: 'border-white/50',
+      statusCardBg: 'bg-white/50 backdrop-blur-xs border border-white/30'
+    },
+    cyberpunk: {
+      pageWrapper: 'w-full h-full flex flex-col bg-[#0b0c10] relative text-[#c5c6c7] font-mono',
+      headerBg: 'pt-6 pb-4 px-5 bg-[#1f2833]/90 border-b border-[#45f3ff]/30 z-10 sticky top-0 shadow-[0_2px_8px_rgba(0,0,0,0.5)]',
+      logoText: 'text-[#66fcf1] font-black tracking-widest text-xl block italic drop-shadow-[0_0_3px_rgba(102,252,241,0.3)]',
+      logoSubtext: 'text-[10px] text-amber-400 uppercase font-bold tracking-widest block',
+      logoLetterBg: 'bg-[#66fcf1] text-[#0b0c10] shadow-[0_0_8px_rgba(102,252,241,0.5)] border border-transparent font-black',
+      textMuted: 'text-[9px] font-mono font-bold tracking-widest text-[#66fcf1]/50 uppercase',
+      textMain: 'text-[#c5c6c7]',
+      titleText: 'text-[#66fcf1] font-black tracking-wider uppercase',
+      card: 'bg-[#1f2833]/95 border border-[#45f3ff]/20 shadow-[0_3px_10px_rgba(0,0,0,0.4)] rounded-xl p-3 flex gap-3 hover:border-[#45f3ff]/50 transition-all duration-300',
+      badge: 'bg-[#0b0c10] text-[#66fcf1] border border-[#66fcf1]/20 font-bold',
+      accentText: 'text-[#66fcf1] font-black',
+      btnAccent: 'px-2.5 py-1 bg-[#66fcf1] text-[#0b0c10] font-black hover:bg-[#45f3ff] shadow-[0_0_8px_rgba(102,252,241,0.35)] hover:shadow-[0_0_15px_rgba(69,243,255,0.6)] border border-transparent rounded-lg',
+      btnAccentLg: 'w-full py-3 bg-[#66fcf1] text-[#0b0c10] font-black hover:bg-[#45f3ff] shadow-[0_0_10px_rgba(102,252,241,0.45)] border border-transparent rounded-xl transition-all uppercase tracking-wider',
+      btnSec: 'bg-[#12161f] hover:bg-[#1a1f26] text-[#c5c6c7] border border-[#2c3540] hover:border-[#66fcf1]/30 font-bold rounded-lg',
+      tabActive: 'bg-[#66fcf1] text-[#0b0c10] font-black border border-[#66fcf1] shadow-[0_0_8px_rgba(102,252,241,0.25)] rounded-full',
+      tabInactive: 'bg-[#12161f] hover:bg-[#1a1f26] text-[#c5c6c7]/80 hover:text-white border border-[#2c3540] hover:border-[#66fcf1]/20 rounded-full',
+      input: 'w-full bg-[#12171e] border border-[#2c3540] text-[#66fcf1] rounded-xl outline-none focus:border-[#66fcf1] placeholder-[#c5c6c7]/30 shadow-[inset_0_1px_3px_rgba(0,0,0,0.6)] font-mono',
+      iconBg: 'bg-[#1f2833] border border-[#66fcf1]/20 text-[#66fcf1]',
+      cartBadge: 'bg-[#45f3ff] text-[#0b0c10] font-black',
+      searchIcon: 'text-[#66fcf1]/50',
+      menuBg: 'bg-transparent',
+      subtextClass: 'text-[9px] text-amber-400 font-bold tracking-widest uppercase',
+      subtextClass2: 'text-[9px] text-[#66fcf1]/50 font-bold tracking-wider',
+      divider: 'border-[#2c3540]',
+      statusCardBg: 'bg-[#12171e] border border-[#2c3540]'
+    },
+    win11: {
+      pageWrapper: 'w-full h-full flex flex-col bg-[#f3f3f3] relative text-zinc-800 font-sans',
+      headerBg: 'pt-6 pb-4 px-5 bg-white border-b border-zinc-200 z-10 sticky top-0 shadow-xs',
+      logoText: 'text-[#0078d4] font-bold text-xl tracking-tight block uppercase',
+      logoSubtext: 'text-[10px] text-zinc-500 uppercase font-semibold tracking-wide block',
+      logoLetterBg: 'bg-[#0078d4] text-white shadow-xs font-semibold',
+      textMuted: 'text-[10px] font-semibold text-zinc-500 tracking-wide uppercase',
+      textMain: 'text-zinc-800',
+      titleText: 'text-zinc-850 font-bold',
+      card: 'bg-white p-3 rounded-xl shadow-xs border border-zinc-200/80 hover:border-[#0078d4]/50 transition-colors flex gap-3',
+      badge: 'bg-[#e6f2fc] text-[#0078d4] border border-[#aae0fa]/40 font-semibold',
+      accentText: 'text-[#0078d4] font-bold',
+      btnAccent: 'px-2.5 py-1 bg-[#0078d4] hover:bg-[#0067b8] text-white font-semibold rounded-lg shadow-xs hover:shadow-sm',
+      btnAccentLg: 'w-full py-3 bg-[#0078d4] hover:bg-[#0067b8] text-white font-semibold rounded-xl shadow-xs transition-colors uppercase tracking-wider',
+      btnSec: 'bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-200/80 font-medium rounded-lg',
+      tabActive: 'bg-white text-[#0078d4] border-b-2 border-[#0078d4] font-bold rounded-none',
+      tabInactive: 'bg-transparent text-zinc-550 hover:text-zinc-900 border-none rounded-none',
+      input: 'w-full bg-white border border-zinc-300 text-zinc-800 focus:border-[#0078d4] focus:ring-1 focus:ring-[#0078d4] rounded-lg',
+      iconBg: 'bg-[#e6f2fc] text-[#0078d4] border border-[#aae0fa]/30',
+      cartBadge: 'bg-[#0078d4] text-white',
+      searchIcon: 'text-zinc-400',
+      menuBg: 'bg-transparent',
+      subtextClass: 'text-[9px] text-[#0078d4] font-semibold uppercase',
+      subtextClass2: 'text-[9px] text-zinc-400',
+      divider: 'border-zinc-200',
+      statusCardBg: 'bg-white border border-zinc-200'
+    }
+  };
+
+  const c_theme = themeStyles[customerTheme];
+
   // Hydrate user cookies data on load
   useEffect(() => {
     const cookieData = getCustomerCookie();
@@ -440,7 +569,7 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
 
   // Standard standalone mobile header/footer
   return (
-    <div className={`w-full h-full flex flex-col bg-slate-50 relative ${!isStandaloneMobile ? 'h-[640px] overflow-hidden' : 'min-h-screen'}`}>
+    <div className={`${c_theme.pageWrapper} ${!isStandaloneMobile ? 'h-[640px] overflow-hidden' : 'min-h-screen'}`}>
       {/* Floating Copy Feedback Toast */}
       {copiedText && (
         <div className="absolute top-[80px] left-1/2 -translate-x-1/2 bg-slate-800 text-white font-black text-[9px] uppercase tracking-wider px-3 py-1.5 rounded-full shadow-xl z-50 flex items-center gap-1 animate-fade-in border border-slate-700">
@@ -449,14 +578,25 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
       )}
       
       {/* Mobile Top Header */}
-      <div className="pt-6 pb-4 px-5 bg-white border-b border-slate-100 z-10 sticky top-0 shadow-xs">
+      <div className={c_theme.headerBg}>
         <div className="flex justify-between items-center mb-3">
           <div className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-xl bg-orange-600 flex items-center justify-center text-white font-black text-sm shadow-md shadow-orange-100">B</span>
+            {storeConfig.logoUrl ? (
+              <img 
+                src={storeConfig.logoUrl} 
+                alt="Logo" 
+                className="w-8 h-8 rounded-xl object-cover shrink-0 select-none shadow-xs border border-zinc-200/50"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm uppercase ${c_theme.logoLetterBg}`}>
+                {storeConfig.name ? storeConfig.name.trim().charAt(0) : 'B'}
+              </span>
+            )}
             <div>
-              <span className="font-extrabold text-xl tracking-tight text-slate-800 italic block">BẾP VIỆT</span>
+              <span className={c_theme.logoText}>{storeConfig.name || 'BẾP VIỆT'}</span>
               <div className="flex items-center gap-1 -mt-1.5">
-                <span className="text-[10px] text-orange-600 uppercase font-extrabold tracking-widest block">Trực tuyến</span>
+                <span className={c_theme.logoSubtext}>Trực tuyến</span>
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse block" title="Đồng bộ đám mây hoạt động"></span>
               </div>
             </div>
@@ -467,7 +607,7 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
             {onToggleAdminView && (
               <button 
                 onClick={onToggleAdminView}
-                className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 uppercase"
+                className={`px-2.5 py-1.5 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 uppercase ${c_theme.btnSec}`}
               >
                 <Smartphone className="w-3.5 h-3.5 text-orange-600" />
                 Vào Admin
@@ -476,11 +616,11 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
 
             <button 
               onClick={() => cart.length > 0 && setIsCartOpen(true)}
-              className="p-2 relative bg-slate-100 hover:bg-orange-50 hover:text-orange-600 rounded-full transition-all"
+              className={`p-2 relative rounded-full transition-all ${c_theme.btnSec}`}
             >
-              <ShoppingBag className="w-5 h-5 text-slate-700" />
+              <ShoppingBag className="w-5 h-5 text-current" />
               {getCartCount() > 0 && (
-                <span className="absolute -top-1 -right-1 bg-orange-600 text-white font-mono text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
+                <span className={`absolute -top-1 -right-1 font-mono text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-pulse ${c_theme.cartBadge}`}>
                   {getCartCount()}
                 </span>
               )}
@@ -497,13 +637,13 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
                 placeholder="Tìm món: phở, bún, nem..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-100 border border-slate-200 rounded-2xl py-2.5 pl-10 pr-8 text-xs font-medium focus:ring-2 focus:ring-orange-200 focus:bg-white transition-all outline-none text-slate-800"
+                className={`w-full rounded-2xl py-2.5 pl-10 pr-8 text-xs font-medium transition-all outline-none ${c_theme.input}`}
               />
-              <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
+              <Search className={`w-4 h-4 absolute left-3.5 top-3.5 ${c_theme.searchIcon}`} />
               {searchQuery && (
                 <button 
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-3 bg-slate-200 rounded-full p-0.5 text-slate-500 hover:text-slate-800"
+                  className="absolute right-3 top-3 bg-slate-200/50 rounded-full p-0.5 text-slate-500 hover:text-slate-800"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -516,8 +656,8 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
                 onClick={() => setActiveCategory('all')}
                 className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase transition-all shrink-0 ${
                   activeCategory === 'all'
-                    ? 'bg-orange-600 text-white shadow-md shadow-orange-100'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? c_theme.tabActive
+                    : c_theme.tabInactive
                 }`}
               >
                 Tất cả
@@ -528,8 +668,8 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
                   onClick={() => setActiveCategory(cat.id)}
                   className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase transition-all shrink-0 flex items-center gap-1 ${
                     activeCategory === cat.id
-                      ? 'bg-orange-600 text-white shadow-md shadow-orange-100'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? c_theme.tabActive
+                      : c_theme.tabInactive
                   }`}
                 >
                   <span>{cat.icon}</span>
@@ -540,22 +680,22 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
           </>
         ) : activeViewMode === 'history' ? (
           <div className="flex items-center gap-2 py-0.5 animate-fade-in">
-            <div className="w-9 h-9 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${c_theme.iconBg}`}>
               <ClipboardList className="w-5 h-5 text-current" />
             </div>
             <div>
-              <h2 className="font-extrabold text-sm text-slate-800 uppercase tracking-tight">Đơn hàng của tôi</h2>
-              <p className="text-[9px] text-slate-400 font-semibold uppercase -mt-0.5">Lịch sử {customerOrders.length} đơn đặt trên thiết bị</p>
+              <h2 className={`font-extrabold text-sm uppercase tracking-tight ${c_theme.titleText}`}>Đơn hàng của tôi</h2>
+              <p className={`${c_theme.subtextClass} font-semibold uppercase -mt-0.5`}>Lịch sử {customerOrders.length} đơn đặt trên thiết bị</p>
             </div>
           </div>
         ) : (
           <div className="flex items-center gap-2 py-0.5 animate-fade-in">
-            <div className="w-9 h-9 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${c_theme.iconBg}`}>
               <Phone className="w-5 h-5 text-current" />
             </div>
             <div>
-              <h2 className="font-extrabold text-sm text-slate-800 uppercase tracking-tight">Liên hệ quán</h2>
-              <p className="text-[9px] text-slate-400 font-semibold uppercase -mt-0.5">Hotline, địa chỉ & hoạt động quán</p>
+              <h2 className={`font-extrabold text-sm uppercase tracking-tight ${c_theme.titleText}`}>Liên hệ quán</h2>
+              <p className={`${c_theme.subtextClass} font-semibold uppercase -mt-0.5`}>Hotline, địa chỉ & hoạt động quán</p>
             </div>
           </div>
         )}
@@ -564,7 +704,7 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
       {/* Main Dishes Area */}
       {activeViewMode === 'menu' ? (
         <div 
-          className={`flex-1 overflow-y-auto px-4 pt-3 bg-slate-50/70 ${
+          className={`flex-1 overflow-y-auto px-4 pt-3 ${c_theme.menuBg} ${
             getCartCount() > 0 
               ? (isStandaloneMobile ? 'pb-[210px]' : 'pb-[180px]') 
               : (isStandaloneMobile ? 'pb-16' : 'pb-20')
@@ -579,16 +719,16 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              <p className="text-[10px] font-semibold text-slate-400 tracking-wider uppercase mb-1 px-1">
+              <p className={`text-[10px] font-semibold tracking-wider uppercase mb-1 px-1 ${c_theme.textMuted}`}>
                 Thực đơn ({filteredProducts.length} món sẵn có)
               </p>
               {filteredProducts.map(product => (
                 <div 
                   key={product.id}
-                  className={`bg-white p-3 rounded-2xl shadow-xs border border-slate-100 flex gap-3 hover:border-orange-200 transition-colors ${!product.isAvailable ? 'opacity-60 bg-slate-50' : ''}`}
+                  className={`${c_theme.card} ${!product.isAvailable ? 'opacity-60 bg-slate-50/50' : ''}`}
                 >
                   {/* Product Image representation */}
-                  <div className="relative w-16 h-16 bg-orange-50 rounded-xl flex items-center justify-center text-4xl shrink-0 select-none">
+                  <div className="relative w-16 h-16 bg-orange-50/20 rounded-xl flex items-center justify-center text-4xl shrink-0 select-none">
                     {getProductImageSymbol(product)}
                     {!product.isAvailable && (
                       <div className="absolute inset-0 bg-slate-900/50 rounded-xl flex items-center justify-center text-[8px] font-black text-white uppercase transform rotate-[-10deg]">Hết món</div>
@@ -604,26 +744,26 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
                       <p className="text-[9px] text-slate-400 line-clamp-2 leading-relaxed mt-0.5">{product.description}</p>
                     </div>
                     <div className="flex justify-between items-center mt-1">
-                      <span className="text-orange-600 font-extrabold text-xs">
+                      <span className={c_theme.accentText}>
                         {product.price.toLocaleString('vi-VN')}đ
                       </span>
                       
                       {/* Cart counter indicator for this product */}
                       {product.isAvailable && (
                         cart.find(c => c.product.id === product.id) ? (
-                          <div className="flex items-center gap-1.5 bg-orange-50 rounded-lg p-0.5">
+                          <div className={`flex items-center gap-1.5 rounded-lg p-0.5 ${c_theme.iconBg}`}>
                             <button 
                               onClick={() => updateQuantity(product.id, -1)}
-                              className="w-5 h-5 bg-white text-orange-600 border border-orange-100 rounded flex items-center justify-center text-xs font-extrabold shadow-sm active:scale-90"
+                              className={`w-5 h-5 flex items-center justify-center text-xs font-extrabold shadow-sm active:scale-90 ${c_theme.btnSec}`}
                             >
                               -
                             </button>
-                            <span className="text-[10px] font-bold text-orange-600 px-0.5 min-w-3 text-center">
+                            <span className={`text-[10px] font-bold px-0.5 min-w-3 text-center ${c_theme.accentText}`}>
                               {cart.find(c => c.product.id === product.id)?.quantity}
                             </span>
                             <button 
                               onClick={() => addToCart(product)}
-                              className="w-5 h-5 bg-orange-600 text-white rounded flex items-center justify-center text-xs font-extrabold shadow-sm active:scale-90"
+                              className={`w-5 h-5 flex items-center justify-center text-xs font-extrabold shadow-sm active:scale-90 ${c_theme.btnAccent}`}
                             >
                               +
                             </button>
@@ -631,7 +771,7 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
                         ) : (
                           <button 
                             onClick={() => addToCart(product)}
-                            className="px-2.5 py-1 bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-extrabold rounded-lg transition-transform active:scale-95 flex items-center gap-1 shadow-xs shadow-orange-100"
+                            className={`transition-transform active:scale-95 flex items-center gap-1 shadow-xs ${c_theme.btnAccent}`}
                           >
                             <Plus className="w-3.5 h-3.5" /> Thêm
                           </button>
@@ -646,8 +786,8 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
           
           {/* Simple operating notice */}
           <div className="mt-8 mb-4 text-center">
-            <p className="text-[9px] text-slate-400">Giờ phục vụ: {storeConfig.openHours} hằng ngày</p>
-            <p className="text-[9px] text-slate-300 mt-0.5">Cam kết nguyên liệu sạch, thơm nóng giao nhanh</p>
+            <p className={c_theme.subtextClass}>Giờ phục vụ: {storeConfig.openHours} hằng ngày</p>
+            <p className={`${c_theme.subtextClass2} mt-0.5`}>Cam kết nguyên liệu sạch, thơm nóng giao nhanh</p>
           </div>
         </div>
       ) : activeViewMode === 'history' ? (

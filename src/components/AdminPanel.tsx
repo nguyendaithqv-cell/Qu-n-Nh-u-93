@@ -24,7 +24,11 @@ import {
   AlertCircle,
   ArrowUp,
   ArrowDown,
-  Upload
+  Upload,
+  Cpu,
+  Volume2,
+  Printer,
+  Laptop
 } from 'lucide-react';
 import { Product, Category, Order, OrderStatus, PaymentStatus, StoreConfig, Promotion, Customer } from '../types';
 import ReportSection from './ReportSection';
@@ -57,10 +61,40 @@ export default function AdminPanel({
   onLogout
 }: AdminPanelProps) {
   // Navigation
-  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'categories' | 'promotions' | 'store' | 'customers' | 'report'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'categories' | 'promotions' | 'store' | 'customers' | 'report' | 'system'>('orders');
   const [productFilter, setProductFilter] = useState<'all' | 'available' | 'unavailable'>('all');
   const [categoryIdFilter, setCategoryIdFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // System Theme & Settings States
+  const [adminTheme, setAdminTheme] = useState<'standard' | 'vista' | 'cyberpunk' | 'win11'>(
+    () => (localStorage.getItem('admin-panel-theme') as any) || 'standard'
+  );
+  const [audioEnabled, setAudioEnabled] = useState<boolean>(
+    () => localStorage.getItem('system-audio-enabled') !== 'false'
+  );
+  const [autoApprove, setAutoApprove] = useState<boolean>(
+    () => localStorage.getItem('system-auto-approve') === 'true'
+  );
+  const [autoPrint, setAutoPrint] = useState<boolean>(
+    () => localStorage.getItem('system-auto-print') === 'true'
+  );
+
+  useEffect(() => {
+    localStorage.setItem('admin-panel-theme', adminTheme);
+  }, [adminTheme]);
+
+  useEffect(() => {
+    localStorage.setItem('system-audio-enabled', audioEnabled ? 'true' : 'false');
+  }, [audioEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('system-auto-approve', autoApprove ? 'true' : 'false');
+  }, [autoApprove]);
+
+  useEffect(() => {
+    localStorage.setItem('system-auto-print', autoPrint ? 'true' : 'false');
+  }, [autoPrint]);
 
   // Sub States
   const [editingConfig, setEditingConfig] = useState<StoreConfig>({ ...storeConfig });
@@ -261,7 +295,7 @@ export default function AdminPanel({
       if (orderToCancel && cancellationReason) {
           const updated = orders.map(ord => {
               if (ord.id === orderToCancel.id) {
-                  return { ...ord, status: 'cancelled', cancellationReason: cancellationReason };
+                  return { ...ord, status: 'cancelled' as OrderStatus, cancellationReason: cancellationReason };
               }
               return ord;
           });
@@ -642,14 +676,120 @@ export default function AdminPanel({
     }
   };
 
+  const themeStyles = {
+    standard: {
+      pageWrapper: 'flex-1 overflow-y-auto px-6 py-6 font-sans text-slate-800 bg-slate-50/50',
+      titleBar: 'text-slate-800 border-b border-slate-100 pb-3',
+      textClass: 'text-slate-800 font-sans',
+      textMuted: 'text-[#828282] font-semibold',
+      textTitle: 'text-slate-900 font-extrabold pb-1 uppercase tracking-wider',
+      card: 'bg-white border border-slate-200/60 shadow-sm rounded-2xl hover:shadow-md transition-all duration-200',
+      cardSec: 'bg-slate-50 border border-slate-200 rounded-2xl p-4',
+      btnAccent: 'bg-orange-600 hover:bg-orange-700 text-white font-extrabold pb-2 pt-2 px-4 rounded-xl shadow-sm transition-all uppercase tracking-wider',
+      btnSec: 'bg-white hover:bg-slate-50 text-slate-705 border border-slate-200 font-bold pb-2 pt-2 px-4 rounded-xl shadow-xs transition-all uppercase tracking-wide',
+      tabActive: 'bg-orange-600 text-white shadow-sm',
+      tabInactive: 'text-slate-600 hover:bg-slate-100/50',
+      tabContainer: 'flex border-b border-slate-200 mb-6 bg-white rounded-xl p-1 shadow-xs font-semibold text-xs overflow-x-auto no-scrollbar',
+      tableHeader: 'bg-slate-50 text-slate-500 font-extrabold uppercase border-b border-slate-100',
+      tableHeaderCell: 'hover:bg-slate-100 text-slate-505 cursor-pointer p-3',
+      tableRow: 'hover:bg-slate-50/50 even:bg-slate-50/45 odd:bg-white transition-all',
+      tableCellBorder: 'border-slate-100 border-r',
+      badge: 'bg-slate-100 border border-slate-200 text-slate-600 font-bold px-2 py-0.5 rounded-md text-[10px]',
+      input: 'bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-850 outline-none focus:bg-white focus:border-orange-500',
+      icon: 'text-orange-605',
+      divider: 'border-slate-100',
+      titleSpin: 'text-orange-600 animate-spin-slow',
+      panelTitle: 'Quản Lý Hệ Thống KHAI VỊ',
+      subText: 'Thống số tổng quan'
+    },
+    vista: {
+      pageWrapper: 'flex-1 overflow-y-auto px-6 py-6 font-sans text-slate-800 bg-gradient-to-br from-sky-100/30 via-slate-150 to-emerald-100/30 relative overflow-x-hidden',
+      titleBar: 'text-slate-900 border-b border-white/40 pb-4 relative before:absolute before:inset-x-0 before:-top-2 before:h-1 before:bg-gradient-to-r before:from-sky-400 before:to-emerald-400',
+      textClass: 'text-slate-800 font-sans',
+      textMuted: 'text-slate-500 font-black uppercase tracking-wider text-[10px]',
+      textTitle: 'text-slate-900 drop-shadow-[0_1px_0_rgba(255,255,255,0.85)] font-black uppercase tracking-wide',
+      card: 'bg-white/70 backdrop-blur-md border border-white/50 shadow-[0_8px_20px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.7)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.1)] transition-all duration-300 rounded-2xl overflow-hidden',
+      cardSec: 'bg-slate-200/40 backdrop-blur-sm border border-white/35 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] rounded-2xl p-4',
+      btnAccent: 'bg-gradient-to-b from-sky-450 to-sky-700 hover:to-sky-650 text-white hover:shadow-[0_4px_12px_rgba(3,105,161,0.3)] border border-sky-600 relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-[50%] before:bg-white/20 font-black pb-2 pt-2 px-4 rounded-xl shadow-md transition-all uppercase tracking-wider',
+      btnSec: 'bg-gradient-to-b from-white to-slate-100/90 hover:from-white hover:to-slate-50 text-slate-705 border border-slate-250 hover:border-slate-350 shadow-sm relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-[50%] before:bg-white/30 font-bold pb-2 pt-2 px-4 rounded-xl transition-all uppercase tracking-wide',
+      tabActive: 'bg-gradient-to-b from-sky-400 via-sky-600 to-sky-700 text-white shadow-[0_2px_8px_rgba(3,105,161,0.3),inset_0_1px_0_rgba(255,255,255,0.4)] border border-sky-650 relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-[50%] before:bg-white/35',
+      tabInactive: 'bg-gradient-to-b from-white to-slate-100/85 hover:from-white hover:to-slate-50 text-slate-650 hover:text-slate-850 border border-slate-200/80 hover:border-slate-300 shadow-xs active:bg-slate-200',
+      tabContainer: 'flex border-b border-white/40 mb-6 bg-white/45 backdrop-blur-md border border-white/45 p-1 rounded-xl shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)] font-semibold text-xs overflow-x-auto no-scrollbar',
+      tableHeader: 'bg-gradient-to-b from-slate-100 to-slate-200 text-slate-750 font-extrabold uppercase border-b border-slate-300 relative before:absolute before:inset-x-0 before:top-0 before:h-[1px] before:bg-white/80',
+      tableHeaderCell: 'hover:bg-slate-300 text-slate-750 cursor-pointer p-3.5 border-r border-slate-200',
+      tableRow: 'hover:bg-sky-100/50 even:bg-slate-100/25 odd:bg-white/45 transition-all backdrop-blur-xs',
+      tableCellBorder: 'border-slate-200 border-r',
+      badge: 'bg-white/60 backdrop-blur-xs border border-white/50 text-slate-600 font-mono text-[10px] uppercase font-black px-2 py-0.5 rounded-md inline-block',
+      input: 'bg-white/80 border border-slate-250 hover:border-slate-350 focus:border-sky-500 rounded-xl px-3 py-2 font-semibold text-slate-850 outline-none shadow-inner transition-colors focus:bg-white',
+      icon: 'text-sky-600 drop-shadow-[0_0.5px_0.5px_rgba(255,255,255,0.85)]',
+      divider: 'border-slate-200/80',
+      titleSpin: 'text-sky-600 animate-pulse',
+      panelTitle: 'IE explorer.exe [Hệ Thống Khai Vị - Aero Glass v2.0]',
+      subText: 'Thống số tổng quan'
+    },
+    cyberpunk: {
+      pageWrapper: 'flex-1 overflow-y-auto px-6 py-6 font-mono text-[#c5c6c7] bg-[#0b0c10] relative overflow-x-hidden',
+      titleBar: 'text-[#66fcf1] border-b border-[#45f3ff]/30 pb-3 shadow-[0_1px_4px_rgba(102,252,241,0.15)]',
+      textClass: 'text-[#c5c6c7] font-mono',
+      textMuted: 'text-[#66fcf1]/60 font-mono uppercase tracking-widest text-[9px] font-semibold',
+      textTitle: 'text-[#66fcf1] font-black tracking-widest drop-shadow-[0_0_4px_rgba(102,252,241,0.25)] uppercase',
+      card: 'bg-[#1f2833]/90 border border-[#45f3ff]/30 shadow-[0_4px_15px_rgba(0,0,0,0.5)] hover:border-[#45f3ff]/60 transition-all rounded-xl duration-200',
+      cardSec: 'bg-[#0f1115] border border-[#2c3540] rounded-xl p-4 shadow-inner',
+      btnAccent: 'bg-[#66fcf1] text-[#0b0c10] hover:bg-[#45f3ff] font-extrabold shadow-[0_0_12px_rgba(102,252,241,0.4)] hover:shadow-[0_0_20px_rgba(69,243,255,0.7)] border border-transparent select-none tracking-widest uppercase transition-all pb-2 pt-2 px-4 rounded-xl',
+      btnSec: 'bg-[#1f2833] hover:bg-[#2c353f] text-[#66fcf1] border border-[#66fcf1]/45 hover:border-[#66fcf1] hover:shadow-[0_0_8px_rgba(102,252,241,0.2)] tracking-wider transition-all pb-2 pt-2 px-4 rounded-xl font-bold uppercase text-[10px]',
+      tabActive: 'bg-[#66fcf1] text-[#0b0c10] font-black border border-[#66fcf1] shadow-[0_0_10px_rgba(102,252,241,0.35)]',
+      tabInactive: 'bg-[#12161f] hover:bg-[#1a1f26] text-[#c5c6c7]/80 hover:text-white border border-[#2c3540] hover:border-[#66fcf1]/30 active:text-cyan-400',
+      tabContainer: 'flex border-b border-[#2c3540] mb-6 bg-[#12161f] border border-[#2c3540] p-1 rounded-xl font-semibold text-xs overflow-x-auto no-scrollbar',
+      tableHeader: 'bg-[#1f2833] text-[#66fcf1] font-extrabold uppercase border-b border-[#66fcf1]/30 shadow-[0_2px_5px_rgba(0,0,0,0.2)]',
+      tableHeaderCell: 'hover:bg-[#2c353f] border-r border-[#2c3540] text-[#66fcf1] cursor-pointer p-3',
+      tableRow: 'hover:bg-[#10303a]/40 even:bg-[#171e27] odd:bg-[#12171e] text-[#c5c6c7]/90 border-b border-[#2c3540]',
+      tableCellBorder: 'border-[#2c3540] border-r',
+      badge: 'bg-[#0b0c10] border border-[#66fcf1]/30 text-[#66fcf1] font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-md inline-block',
+      input: 'bg-[#12171e] border border-[#2c3540] text-[#66fcf1] rounded-xl px-3 py-2 font-mono outline-none focus:border-[#66fcf1] shadow-[inset_0_1px_3px_rgba(0,0,0,0.6)] focus:ring-1 focus:ring-[#66fcf1]',
+      icon: 'text-[#66fcf1] drop-shadow-[0_0_4px_rgba(102,252,241,0.2)]',
+      divider: 'border-[#2c3540]',
+      titleSpin: 'text-[#66fcf1] animate-pulse shadow-glow',
+      panelTitle: '[ROOT@PORT_3000:~# ADMIN_WORKSPACE]',
+      subText: 'SYSTEM_OVERVIEW_KPI'
+    },
+    win11: {
+      pageWrapper: 'flex-1 overflow-y-auto px-6 py-6 font-sans text-[#1c1c1c] bg-[#f3f3f3] relative overflow-x-hidden',
+      titleBar: 'text-[#1c1c1c] border-b border-zinc-200/80 pb-3',
+      textClass: 'text-slate-800 font-sans',
+      textMuted: 'text-zinc-500 font-semibold uppercase tracking-wider text-[10px]',
+      textTitle: 'text-zinc-900 font-bold tracking-tight pb-1',
+      card: 'bg-white/80 backdrop-blur-md border border-[#e5e5e5] shadow-[0_2px_4px_rgba(0,0,0,0.04)] rounded-xl hover:shadow-[0_8px_16px_rgba(0,0,0,0.06)] transition-all duration-300 overflow-hidden',
+      cardSec: 'bg-[#fafafa]/90 border border-zinc-200/80 rounded-xl p-4 shadow-xs',
+      btnAccent: 'bg-[#0078d4] hover:bg-[#0067b8] text-white hover:shadow-[0_4px_12px_rgba(0,120,212,0.15)] border border-[#005eaf] active:scale-98 transition-all pb-2 pt-2 px-4 rounded-lg text-xs uppercase tracking-wider font-semibold',
+      btnSec: 'bg-white hover:bg-zinc-50 text-slate-700 border border-zinc-300 font-medium pb-2 pt-2 px-4 rounded-lg shadow-xs transition-all uppercase text-[10px]',
+      tabActive: 'bg-white border-b-2 border-[#0078d4] text-[#0078d4] font-bold shadow-xs',
+      tabInactive: 'text-zinc-650 hover:text-zinc-900 hover:bg-[#eaeaea]/60 rounded-md',
+      tabContainer: 'flex gap-1 border-b border-zinc-200 mb-6 bg-[#f3f3f3] p-1.5 rounded-xl font-semibold text-xs overflow-x-auto no-scrollbar',
+      tableHeader: 'bg-[#fafafa] text-zinc-650 font-semibold border-b border-zinc-200 shadow-xs',
+      tableHeaderCell: 'hover:bg-zinc-200 text-zinc-700 cursor-pointer p-3 border-r border-[#e5e5e5]',
+      tableRow: 'hover:bg-[#0078d4]/5 even:bg-[#fafafa]/50 odd:bg-white transition-all',
+      tableCellBorder: 'border-zinc-200 border-r',
+      badge: 'bg-[#e6f2fc] border border-[#aae0fa]/40 text-[#0078d4] font-semibold text-[10px] px-2.5 py-0.5 rounded-full inline-block',
+      input: 'bg-white border border-zinc-300 focus:border-[#0078d4] focus:ring-1 focus:ring-[#0078d4] rounded-lg px-3 py-2 text-slate-800 outline-none shadow-xs',
+      icon: 'text-[#0078d4]',
+      divider: 'border-zinc-200',
+      titleSpin: 'text-[#0078d4] animate-pulse',
+      panelTitle: 'HostPool.msi [Hệ Thống Khai Vị - Fluent Studio v11]',
+      subText: 'Thông số hệ thống (Mica View)'
+    }
+  };
+
+  const t = themeStyles[adminTheme];
+
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-6 font-sans text-slate-800">
+    <div className={t.pageWrapper}>
       
       {/* Top Welcome Title */}
-      <div className="flex justify-between items-center mb-6">
+      <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b ${t.divider}`}>
         <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-1.5 uppercase">
-            <Settings className="w-6 h-6 text-orange-600 animate-spin-slow" /> Quản Lý Hệ Thống KHAI VỊ
+          <h1 className="text-2xl font-black tracking-tight flex items-center gap-1.5 uppercase select-none">
+            <Settings className={`w-6 h-6 ${t.titleSpin}`} />
+            <span className={t.textTitle}>{t.panelTitle}</span>
           </h1>
         </div>
         
@@ -744,11 +884,11 @@ export default function AdminPanel({
         </div>
 
       {/* Internal Tabs Navigator */}
-      <div className="flex border-b border-slate-200 mb-6 bg-white rounded-xl p-1 shadow-xs font-semibold text-xs overflow-x-auto no-scrollbar">
+      <div className={t.tabContainer}>
         <button
           onClick={() => setActiveTab('orders')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all shrink-0 uppercase tracking-wide font-black ${
-            activeTab === 'orders' ? 'bg-orange-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+            activeTab === 'orders' ? t.tabActive : t.tabInactive
           }`}
         >
           <Clipboard className="w-4 h-4" /> Đơn Hàng ({orders.length})
@@ -756,7 +896,7 @@ export default function AdminPanel({
         <button
           onClick={() => setActiveTab('products')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all shrink-0 uppercase tracking-wide font-black ${
-            activeTab === 'products' ? 'bg-orange-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+            activeTab === 'products' ? t.tabActive : t.tabInactive
           }`}
         >
           <Utensils className="w-4 h-4" /> Thực Đơn ({products.length})
@@ -764,7 +904,7 @@ export default function AdminPanel({
         <button
           onClick={() => setActiveTab('categories')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all shrink-0 uppercase tracking-wide font-black ${
-            activeTab === 'categories' ? 'bg-orange-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+            activeTab === 'categories' ? t.tabActive : t.tabInactive
           }`}
         >
           <Layers className="w-4 h-4" /> Danh Mục ({categories.length})
@@ -772,7 +912,7 @@ export default function AdminPanel({
         <button
           onClick={() => setActiveTab('customers')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all shrink-0 uppercase tracking-wide font-black ${
-            activeTab === 'customers' ? 'bg-orange-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+            activeTab === 'customers' ? t.tabActive : t.tabInactive
           }`}
         >
           <Smartphone className="w-4 h-4" /> Khách hàng
@@ -780,7 +920,7 @@ export default function AdminPanel({
         <button
           onClick={() => setActiveTab('report')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all shrink-0 uppercase tracking-wide font-black ${
-            activeTab === 'report' ? 'bg-orange-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+            activeTab === 'report' ? t.tabActive : t.tabInactive
           }`}
         >
           <FileText className="w-4 h-4" /> Báo Cáo
@@ -788,7 +928,7 @@ export default function AdminPanel({
         <button
           onClick={() => setActiveTab('promotions')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all shrink-0 uppercase tracking-wide font-black ${
-            activeTab === 'promotions' ? 'bg-orange-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+            activeTab === 'promotions' ? t.tabActive : t.tabInactive
           }`}
         >
           <Tag className="w-4 h-4" /> Khuyến Mãi ({promotions.length})
@@ -796,10 +936,18 @@ export default function AdminPanel({
         <button
           onClick={() => setActiveTab('store')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all shrink-0 uppercase tracking-wide font-black ${
-            activeTab === 'store' ? 'bg-orange-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+            activeTab === 'store' ? t.tabActive : t.tabInactive
           }`}
         >
           <Database className="w-4 h-4" /> Thông Tin Cửa Hàng
+        </button>
+        <button
+          onClick={() => setActiveTab('system')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all shrink-0 uppercase tracking-wide font-black ${
+            activeTab === 'system' ? t.tabActive : t.tabInactive
+          }`}
+        >
+          <Cpu className="w-4 h-4 animate-pulse" /> Hệ Thống
         </button>
       </div>
 
@@ -2439,7 +2587,7 @@ export default function AdminPanel({
       {/* 7. REPORT VIEW */}
       {activeTab === 'report' && (
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm animate-fade-in text-xs">
-          <ReportSection products={products} orders={orders} categories={categories} />
+          <ReportSection products={products} orders={orders} categories={categories} storeConfig={storeConfig} />
         </div>
       )}
 
@@ -2637,6 +2785,95 @@ export default function AdminPanel({
             </div>
           </div>
 
+          {/* Custom Logo Upload Section */}
+          <div className="bg-slate-50 p-4 border border-slate-200 border-dashed rounded-2xl space-y-3.5">
+            <h4 className="font-extrabold text-[11px] text-slate-700 uppercase tracking-wider flex items-center gap-1">
+              🏬 LOGO CỬA HÀNG / QUÁN (THAY THẾ CHỮ CÁI ĐẦU)
+            </h4>
+            <p className="text-[10px] text-slate-400 font-medium font-sans leading-normal">
+              Tải lên hình ảnh Logo đại diện tròn/vuông cho quán của bạn. Ảnh Logo này sẽ thay thế biểu tượng hình tròn ký tự đầu tiên ở đầu trang gọi món của thực khách (Mobile Simulator).
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+              {/* Left Column: Direct File Selector or Logo Url Text field */}
+              <div className="space-y-3">
+                {/* 1. File Upload Dropzone / Button */}
+                <div className="space-y-1.5">
+                  <span className="block text-[10px] font-extrabold text-slate-500 uppercase">Chọn ảnh logo từ máy</span>
+                  <div className="relative border-2 border-dashed border-slate-300 rounded-xl p-4 bg-white flex flex-col items-center justify-center text-center hover:border-orange-500 transition-colors cursor-pointer group">
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setEditingConfig(prev => ({
+                              ...prev,
+                              logoUrl: reader.result as string
+                            }));
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
+                    />
+                    <Upload className="w-6 h-6 text-slate-400 group-hover:text-orange-600 transition-colors mb-2" />
+                    <span className="text-[10px] font-black text-slate-700 capitalize">Bấm chọn tệp ảnh Logo</span>
+                    <span className="text-[9px] text-slate-400 mt-1">Hỗ trợ định dạng hình ảnh PNG, JPG, WEBP</span>
+                  </div>
+                </div>
+
+                {/* 2. Manual URL Text field fallback */}
+                <div>
+                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase mb-1">Hoặc dán link ảnh Logo</label>
+                  <input
+                    type="text"
+                    placeholder="https://example.com/shop-logo.png"
+                    value={editingConfig.logoUrl || ''}
+                    onChange={(e) => setEditingConfig({ ...editingConfig, logoUrl: e.target.value })}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-800 outline-none text-[11px]"
+                  />
+                </div>
+              </div>
+
+              {/* Right Column: Dynamic Preview with current selected custom image */}
+              <div className="flex flex-col items-center justify-center bg-white p-3.5 border border-[#e5e5e5] rounded-2xl h-full min-h-[160px]">
+                {editingConfig.logoUrl ? (
+                  <div className="flex flex-col items-center justify-center text-center w-full space-y-2">
+                    <div className="relative w-20 h-20 border border-slate-150 rounded-full overflow-hidden shadow-sm flex items-center justify-center bg-slate-50">
+                      <img 
+                        src={editingConfig.logoUrl} 
+                        alt="Logo Preview" 
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    <span className="text-[8.5px] font-bold text-emerald-600 uppercase tracking-wider">✓ Đang sử dụng ảnh Logo</span>
+                    <button 
+                      type="button"
+                      onClick={() => setEditingConfig({ ...editingConfig, logoUrl: "" })}
+                      className="text-[9px] font-black text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100/70 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                    >
+                      Xóa ảnh Logo
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center p-4">
+                    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-xl font-bold text-slate-450 uppercase mb-2">
+                      {editingConfig.name ? editingConfig.name.trim().charAt(0) : 'B'}
+                    </div>
+                    <h5 className="font-extrabold text-[10px] text-slate-700 uppercase tracking-wide">Dùng Ký Tự Mặc Định</h5>
+                    <p className="text-[9px] text-slate-400 mt-1 leading-normal max-w-[200px]">
+                      Hình tròn hiển thị chữ cái đầu tiên của quán ({editingConfig.name ? editingConfig.name.trim().charAt(0) : 'B'}) do chưa tải logo lên.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="flex justify-end pt-3 border-t border-slate-100">
             <button
               type="submit"
@@ -2647,6 +2884,246 @@ export default function AdminPanel({
           </div>
 
         </form>
+      )}
+
+      {/* 8. SYSTEM CONFIGURATION */}
+      {activeTab === 'system' && (
+        <div className="space-y-6 animate-fade-in text-xs">
+          {/* Card A: Giao Diện / Theme Config */}
+          <div className={`${t.card} p-5 space-y-4`}>
+            <h3 className="font-extrabold text-sm uppercase tracking-wider flex items-center gap-1.5 border-b pb-2">
+              <Laptop className={`w-4 h-4 ${t.icon}`} /> Đổi Phong Cách Giao Diện Hệ Thống (Đồng Bộ Khách & Admin)
+            </h3>
+            <p className="text-[10px] text-slate-400 font-sans leading-normal">
+              Thay đổi toàn bộ giao diện quản trị Admin và Trang thiết bị gọi món của Khách hàng (Mobile Simulator) đồng bộ theo 4 phong cách thiết kế độc đáo. Hệ thống tự động lưu trữ tức thì lựa chọn của bạn.
+            </p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              
+              {/* Option 1: Standard theme */}
+              <div 
+                onClick={() => setAdminTheme('standard')}
+                className={`border rounded-xl p-4 cursor-pointer transition-all duration-300 relative group flex flex-col justify-between min-h-[140px] ${
+                  adminTheme === 'standard' 
+                    ? 'border-orange-500 bg-orange-50/20 ring-1 ring-orange-500 shadow-sm' 
+                    : 'border-slate-205 bg-white hover:border-slate-350 hover:shadow-xs'
+                }`}
+              >
+                <div>
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-[10px] bg-slate-100 text-slate-700 font-black px-2 py-0.5 rounded uppercase tracking-wider">Mặc định</span>
+                    <span className="text-xl">☀️</span>
+                  </div>
+                  <h4 className="font-extrabold text-slate-800 text-[11px] uppercase tracking-wide">Classic Standard</h4>
+                  <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">Nền sáng sang trọng, cam ấm áp tươi tắn, độ tương phản cao, tương thích hoàn hảo mọi thiết bị.</p>
+                </div>
+                <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100/60">
+                  <span className="text-[9px] text-orange-600 font-bold">Classic Cam</span>
+                  <button className={`px-2.5 py-1 text-[9px] font-black uppercase rounded ${
+                    adminTheme === 'standard' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {adminTheme === 'standard' ? '✓ Đang dùng' : 'Sử dụng'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Option 2: Vista theme */}
+              <div 
+                onClick={() => setAdminTheme('vista')}
+                className={`border rounded-xl p-4 cursor-pointer transition-all duration-300 relative group flex flex-col justify-between min-h-[140px] ${
+                  adminTheme === 'vista' 
+                    ? 'border-sky-500 bg-sky-50/25 ring-1 ring-sky-500 shadow-sm' 
+                    : 'border-slate-205 bg-white hover:border-slate-350 hover:shadow-xs'
+                }`}
+              >
+                <div>
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-[10px] bg-sky-100 text-sky-700 font-black px-2 py-0.5 rounded uppercase tracking-wider">Aero Glass</span>
+                    <span className="text-xl">💿</span>
+                  </div>
+                  <h4 className="font-extrabold text-slate-800 text-[11px] uppercase tracking-wide">Windows Vista Style</h4>
+                  <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">Hiệu ứng kính mờ Glassmorphic, dải ngọc bích đổi màu bóng bẩy, hoài niệm sang trọng.</p>
+                </div>
+                <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100/60">
+                  <span className="text-[9px] text-sky-600 font-bold">Kính pha lê</span>
+                  <button className={`px-2.5 py-1 text-[9px] font-black uppercase rounded ${
+                    adminTheme === 'vista' ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {adminTheme === 'vista' ? '✓ Đang dùng' : 'Sử dụng'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Option 3: Cyberpunk theme */}
+              <div 
+                onClick={() => setAdminTheme('cyberpunk')}
+                className={`border rounded-xl p-4 cursor-pointer transition-all duration-300 relative group flex flex-col justify-between min-h-[140px] ${
+                  adminTheme === 'cyberpunk' 
+                    ? 'border-cyan-400 bg-cyan-950/20 ring-1 ring-cyan-400 shadow-sm' 
+                    : 'border-slate-205 bg-white hover:border-slate-350 hover:shadow-xs'
+                }`}
+              >
+                <div>
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-[10px] bg-zinc-800 text-cyan-400 border border-cyan-400/20 font-black px-2 py-0.5 rounded uppercase tracking-wider">Neon Dark</span>
+                    <span className="text-xl">🌌</span>
+                  </div>
+                  <h4 className="font-extrabold text-slate-800 text-[11px] uppercase tracking-wide">Cyberpunk Mode</h4>
+                  <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">Nền tối Carbon Matrix, dải viền Neon Cyan phát sáng cực ngầu, tiết kiệm pin tối đa.</p>
+                </div>
+                <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100/60">
+                  <span className="text-[9px] text-cyan-500 font-bold">Cyber Neon</span>
+                  <button className={`px-2.5 py-1 text-[9px] font-black uppercase rounded ${
+                    adminTheme === 'cyberpunk' ? 'bg-cyan-400 text-zinc-950' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {adminTheme === 'cyberpunk' ? '✓ Đang dùng' : 'Sử dụng'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Option 4: Windows 11 theme */}
+              <div 
+                onClick={() => setAdminTheme('win11')}
+                className={`border rounded-xl p-4 cursor-pointer transition-all duration-300 relative group flex flex-col justify-between min-h-[140px] ${
+                  adminTheme === 'win11' 
+                    ? 'border-[#0078d4] bg-[#0078d4]/10 ring-1 ring-[#0078d4] shadow-sm' 
+                    : 'border-slate-205 bg-white hover:border-slate-350 hover:shadow-xs'
+                }`}
+              >
+                <div>
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-[10px] bg-sky-100 text-[#0078d4] font-black px-2 py-0.5 rounded uppercase tracking-wider">Fluent Design</span>
+                    <span className="text-xl">🪟</span>
+                  </div>
+                  <h4 className="font-extrabold text-[#0078d4] text-[11px] uppercase tracking-wide">Windows 11 Style</h4>
+                  <p className="text-[10px] text-slate-405 mt-1 leading-relaxed">Giao diện Fluent Mica thanh nhã, gam màu xanh hy vọng của Microsoft, bo góc mềm mại, hiển thị trực quan.</p>
+                </div>
+                <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100/60">
+                  <span className="text-[9px] text-[#0078d4] font-bold font-sans">Mica Xanh</span>
+                  <button className={`px-2.5 py-1 text-[9px] font-black uppercase rounded ${
+                    adminTheme === 'win11' ? 'bg-[#0078d4] text-white' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {adminTheme === 'win11' ? '✓ Đang dùng' : 'Sử dụng'}
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Card B: Live Automatic & Chime Settings */}
+          <div className={`${t.card} p-5 space-y-4`}>
+            <h3 className="font-extrabold text-sm uppercase tracking-wider flex items-center gap-1.5 border-b pb-2">
+              <Cpu className={`w-4 h-4 ${t.icon}`} /> Tham Sơ Cấu Hình Hệ Thống & Tự Động Hóa
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              <div className={`${t.cardSec} space-y-4 flex flex-col justify-between`}>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold flex items-center gap-1.5">
+                      <Volume2 className={`w-4 h-4 ${t.icon}`} /> Âm báo đơn hàng trực tuyến
+                    </label>
+                    <input 
+                      type="checkbox"
+                      checked={audioEnabled}
+                      onChange={(e) => setAudioEnabled(e.target.checked)}
+                      className="w-4 h-4 text-orange-600 accent-orange-600 rounded cursor-pointer animate-pulse"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-normal">
+                    Tự động chuông "Ding-Dong" êm ái khi phát hiện có bất kỳ khách hàng nào vừa gửi đơn đặt món mâm súp live ở bên ngoài.
+                  </p>
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+                        if (AudioContext) {
+                          const ctx = new AudioContext();
+                          const osc = ctx.createOscillator();
+                          const gain = ctx.createGain();
+                          osc.type = 'sine';
+                          osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                          osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.12);
+                          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                          osc.connect(gain);
+                          gain.connect(ctx.destination);
+                          osc.start();
+                          osc.stop(ctx.currentTime + 0.5);
+                        }
+                      } catch(e) {
+                        alert("Không thể phát âm thanh: hãy kiểm tra phân quyền tab.");
+                      }
+                    }}
+                    className="w-full text-center py-2 bg-slate-200/40 hover:bg-slate-200/70 border border-slate-300/40 font-extrabold text-[10px] uppercase tracking-wide rounded-lg transition-colors cursor-pointer text-slate-705"
+                  >
+                    🔊 Bấm thử âm chuông (Ding Test)
+                  </button>
+                </div>
+              </div>
+
+              <div className={`${t.cardSec} space-y-4 flex flex-col justify-between`}>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold flex items-center gap-1.5">
+                      <Printer className={`w-4 h-4 ${t.icon}`} /> Tự động hiển thị khung In nhiệt
+                    </label>
+                    <input 
+                      type="checkbox"
+                      checked={autoPrint}
+                      onChange={(e) => setAutoPrint(e.target.checked)}
+                      className="w-4 h-4 text-orange-600 accent-orange-600 rounded cursor-pointer"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-normal">
+                    Khi chuyển bất cứ đơn hàng nào sang "Đang chuẩn bị", hệ thống tự động bung drawer in nhiệt mini 58mm/80mm để dán lên mâm súp nhanh chóng.
+                  </p>
+                </div>
+                <div className="bg-slate-100 text-slate-500 rounded p-2 text-[9px] font-sans flex items-center gap-1">
+                  <span>ℹ️</span> <span>Hỗ trợ in qua khổ máy in Xprinter USB/LAN/Wifi hoặc các máy cầm tay Sunmi.</span>
+                </div>
+              </div>
+
+              <div className={`${t.cardSec} space-y-4`}>
+                <div className="flex items-center justify-between">
+                  <label className="font-bold flex items-center gap-1.5">
+                    ⚙️ Chế độ tự động duyệt đơn hàng mới
+                  </label>
+                  <input 
+                    type="checkbox"
+                    checked={autoApprove}
+                    onChange={(e) => setAutoApprove(e.target.checked)}
+                    className="w-4 h-4 text-orange-600 accent-orange-600 rounded cursor-pointer"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 leading-normal">
+                  Chỉ bật chế độ này khi lượng khách đông, hệ thống sẽ tự chuyển đơn từ Khách sang "Đang chuẩn bị" mà chủ tiệm không cần bấm nút phê duyệt từng hóa đơn thủ công.
+                </p>
+              </div>
+
+              <div className={`${t.cardSec} space-y-4 flex flex-col justify-between`}>
+                <div className="space-y-1">
+                  <h4 className="font-bold flex items-center gap-1.5">🛡️ Trạng thái Máy chủ & Kết nối live</h4>
+                  <div className="space-y-1 text-[10px] mt-2">
+                    <div className="flex justify-between"><span>Cơ sở dữ liệu đám mây:</span> <span className="font-black text-emerald-600">CONNECTED (LIVE)</span></div>
+                    <div className="flex justify-between"><span>Thời gian đồng bộ trễ:</span> <span className="font-mono text-indigo-600">~15ms</span></div>
+                    <div className="flex justify-between"><span>Phiên bản mâm súp:</span> <span className="font-mono text-emerald-600">v3.4.1 (Stable Build)</span></div>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center bg-emerald-50 text-emerald-800 text-[9px] rounded p-1 px-2 font-black uppercase tracking-wider">
+                  <span>● Online Core Sync Live</span>
+                  <span>Port 3000 Ingress</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

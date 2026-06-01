@@ -205,11 +205,48 @@ export default function App() {
         }
       } else {
         const list: Order[] = [];
+        let hasNewAddedOrder = false;
+        snapshot.docChanges().forEach(change => {
+          if (change.type === 'added') {
+            const data = change.doc.data() as Order;
+            if (data.status === 'pending') {
+              hasNewAddedOrder = true;
+            }
+          }
+        });
+
         snapshot.forEach(docSnap => {
           list.push(docSnap.data() as Order);
         });
         list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        setOrders(list);
+        
+        setOrders(prev => {
+          if (prev.length > 0 && hasNewAddedOrder) {
+            const audioEnabled = localStorage.getItem('system-audio-enabled') !== 'false';
+            if (audioEnabled) {
+              try {
+                const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+                if (AudioContext) {
+                  const ctx = new AudioContext();
+                  const osc = ctx.createOscillator();
+                  const gain = ctx.createGain();
+                  osc.type = 'sine';
+                  osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                  osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.12);
+                  gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                  osc.connect(gain);
+                  gain.connect(ctx.destination);
+                  osc.start();
+                  osc.stop(ctx.currentTime + 0.5);
+                }
+              } catch (e) {
+                console.warn(e);
+              }
+            }
+          }
+          return list;
+        });
       }
       checkLogged();
     }, (error) => {
