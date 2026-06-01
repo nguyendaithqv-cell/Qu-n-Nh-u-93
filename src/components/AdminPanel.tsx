@@ -639,14 +639,26 @@ export default function AdminPanel({
   };
 
   const exportMenuToExcel = () => {
-    const data = products.map(product => ({
-      'Tên món': product.name,
-      'Danh mục': categories.find(c => c.id === product.categoryId)?.name || product.categoryId,
-      'Giá (VND)': product.price,
-      'Mô tả': product.description,
-      'Trạng thái': product.isAvailable ? 'Sẵn sàng' : 'Hết món',
-      'Emoji': product.image
-    }));
+    const data = products.map(product => {
+      // If the image is a base64 Data URL, we should not write the huge base64 string to Excel, which causes
+      // the "Text length must not exceed 32767 characters" error.
+      const isBase64 = product.image && product.image.startsWith('data:');
+      const emojiVal = isBase64 ? '[Có ảnh]' : (product.image || '🍜');
+      
+      const truncateStr = (val: string) => {
+        if (!val) return '';
+        return val.length > 32000 ? val.substring(0, 32000) + '...' : val;
+      };
+
+      return {
+        'Tên món': truncateStr(product.name),
+        'Danh mục': categories.find(c => c.id === product.categoryId)?.name || product.categoryId,
+        'Giá (VND)': product.price,
+        'Mô tả': truncateStr(product.description || ''),
+        'Trạng thái': product.isAvailable ? 'Sẵn sàng' : 'Hết món',
+        'Emoji': truncateStr(emojiVal)
+      };
+    });
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'ThucDon');
