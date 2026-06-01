@@ -128,6 +128,7 @@ export default function MobileSimulator({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
+  const [itemToRemove, setItemToRemove] = useState<CartItem | null>(null);
   const [promoCode, setPromoCode] = useState<string>('');
   const [appliedPromo, setAppliedPromo] = useState<Promotion | null>(null);
   const [promoError, setPromoError] = useState<string>('');
@@ -188,9 +189,14 @@ export default function MobileSimulator({
 
   const updateQuantity = (productId: string, delta: number) => {
     setCart(prev => {
+      const item = prev.find(i => i.product.id === productId);
+      if (item && item.quantity === 1 && delta === -1) {
+        setItemToRemove(item);
+        return prev;
+      }
       return prev.map(item => {
         if (item.product.id === productId) {
-          const newQty = item.quantity + delta;
+          const newQty = Math.max(0, item.quantity + delta);
           return { ...item, quantity: newQty };
         }
         return item;
@@ -425,6 +431,15 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
   };
 
   const getProductImageSymbol = (product: Product) => {
+    if (product.image && (product.image.startsWith('data:image') || product.image.startsWith('http'))) {
+      return (
+        <img 
+          src={product.image} 
+          alt={product.name} 
+          className="w-full h-full object-cover rounded-[10px]"
+        />
+      );
+    }
     return product.image || '🍛';
   };
 
@@ -1012,36 +1027,36 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
                   {cart.map(item => (
                     <div key={item.product.id} className="py-2.5 flex justify-between items-center gap-4">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-xl select-none shrink-0">{getProductImageSymbol(item.product)}</span>
+                        {/* Remove or minimize the image part */}
                         <div className="min-w-0">
-                          <p className="font-bold text-xs text-slate-800 truncate">{item.product.name}</p>
-                          <p className="text-[10px] text-slate-400 font-medium">
+                          <p className="font-bold text-sm text-slate-800">{item.product.name}</p>
+                          <p className="text-[11px] text-slate-500 font-medium">
                             {item.product.price.toLocaleString('vi-VN')}đ / phần
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 shrink-0">
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
                         <div className="flex items-center gap-1.5 bg-slate-100 rounded-lg p-0.5">
                           <button 
                             type="button"
                             onClick={() => updateQuantity(item.product.id, -1)}
-                            className="w-5 h-5 bg-white text-slate-700 border border-slate-200 rounded flex items-center justify-center text-xs font-bold active:scale-95"
+                            className="w-6 h-6 bg-white text-slate-700 border border-slate-200 rounded flex items-center justify-center text-xs font-bold active:scale-95"
                           >
                             -
                           </button>
-                          <span className="text-[10px] font-bold text-slate-800 px-0.5 min-w-3 text-center">
+                          <span className="text-xs font-bold text-slate-800 px-1 min-w-4 text-center">
                             {item.quantity}
                           </span>
                           <button 
                             type="button"
                             onClick={() => updateQuantity(item.product.id, 1)}
-                            className="w-5 h-5 bg-white text-slate-700 border border-slate-200 rounded flex items-center justify-center text-xs font-bold active:scale-95"
+                            className="w-6 h-6 bg-white text-slate-700 border border-slate-200 rounded flex items-center justify-center text-xs font-bold active:scale-95"
                           >
                             +
                           </button>
                         </div>
-                        <span className="text-xs font-bold text-slate-800 min-w-[65px] text-right">
+                        <span className="text-sm font-bold text-slate-900">
                           {(item.product.price * item.quantity).toLocaleString('vi-VN')}đ
                         </span>
                       </div>
@@ -1049,6 +1064,34 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
                   ))}
                 </div>
               </div>
+
+              {/* Confirmation Removal Modal */}
+              {itemToRemove && (
+                <div className="absolute inset-0 bg-slate-900/50 z-[60] flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl p-5 w-full max-w-xs shadow-xl animate-fade-in">
+                    <p className="text-sm font-bold text-slate-800 text-center mb-4">
+                      Bạn có muốn xóa <span className="text-orange-600">"{itemToRemove.product.name}"</span> khỏi giỏ hàng?
+                    </p>
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={() => setItemToRemove(null)}
+                        className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all"
+                      >
+                        Hủy
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setCart(prev => prev.filter(i => i.product.id !== itemToRemove.product.id));
+                          setItemToRemove(null);
+                        }}
+                        className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl transition-all"
+                      >
+                        Xóa
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Promo code Section */}
               <div className="pt-2 border-t border-slate-100 space-y-1.5">

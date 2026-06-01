@@ -112,6 +112,8 @@ export default function AdminPanel({
   const [currentPage, setCurrentPage] = useState(1);
   const [filterStatus, setFilterStatus] = useState<OrderStatus | 'all'>('all');
   const [filterPaymentStatus, setFilterPaymentStatus] = useState<PaymentStatus | 'all'>('all');
+  const [orderTimeRange, setOrderTimeRange] = useState<TimeRange>('all');
+  const [filterStatsPaymentStatus, setFilterStatsPaymentStatus] = useState<PaymentStatus | 'all'>('all');
   const ITEMS_PER_PAGE = 10;
 
   const calculateStats = () => {
@@ -138,7 +140,7 @@ export default function AdminPanel({
       return true;
     };
 
-    const filteredOrders = orders.filter(o => isInRange(new Date(o.createdAt)));
+    const filteredOrders = orders.filter(o => isInRange(new Date(o.createdAt)) && (filterStatsPaymentStatus === 'all' || o.paymentStatus === filterStatsPaymentStatus));
     
     const totalRev = filteredOrders.filter(o => o.status === 'completed').reduce((sum, o) => sum + o.totalAmount, 0);
     const newOrdCount = filteredOrders.filter(o => o.status === 'pending').length;
@@ -620,6 +622,16 @@ export default function AdminPanel({
               <option value="year_this">Năm này</option>
               <option value="year_last">Năm trước</option>
             </select>
+            <select
+              value={filterStatsPaymentStatus}
+              onChange={(e) => setFilterStatsPaymentStatus(e.target.value as PaymentStatus | 'all')}
+              className="text-[11px] font-bold text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-1.5 outline-none cursor-pointer shadow-sm hover:border-slate-300 transition-colors"
+            >
+              <option value="all">Tất cả TT</option>
+              <option value="paid">Đã TT</option>
+              <option value="unpaid">Chưa TT</option>
+              <option value="debt">Công Nợ</option>
+            </select>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             
@@ -738,6 +750,13 @@ export default function AdminPanel({
                 onChange={(e) => { setOrderSearchQuery(e.target.value); setCurrentPage(1); }}
                 className="bg-white border border-slate-200 rounded-lg p-1 font-bold outline-none w-32"
               />
+              <select value={orderTimeRange} onChange={(e) => { setOrderTimeRange(e.target.value as TimeRange); setCurrentPage(1); }} className="bg-white border border-slate-200 rounded-lg p-1 font-bold uppercase outline-none">
+                <option value="all">Thời gian: Tất cả</option>
+                <option value="today">Hôm nay</option>
+                <option value="yesterday">Hôm qua</option>
+                <option value="week_this">Tuần này</option>
+                <option value="month_this">Tháng này</option>
+              </select>
               <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value as any); setCurrentPage(1); }} className="bg-white border border-slate-200 rounded-lg p-1 font-bold uppercase outline-none">
                 <option value="all">Trạng thái: Tất cả</option>
                 <option value="pending">Chờ duyệt</option>
@@ -756,10 +775,26 @@ export default function AdminPanel({
           </div>
 
           {(() => {
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(todayStart.getDate() - 1);
+            const thisWeekStart = new Date(todayStart); thisWeekStart.setDate(todayStart.getDate() - todayStart.getDay());
+            const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+            const isInRange = (date: Date) => {
+              if (orderTimeRange === 'all') return true;
+              if (orderTimeRange === 'today') return date >= todayStart;
+              if (orderTimeRange === 'yesterday') return date >= yesterdayStart && date < todayStart;
+              if (orderTimeRange === 'week_this') return date >= thisWeekStart;
+              if (orderTimeRange === 'month_this') return date >= thisMonthStart;
+              return true;
+            };
+
             const filteredOrders = orders
               .filter(o => 
                 (filterStatus === 'all' || o.status === filterStatus) &&
                 (filterPaymentStatus === 'all' || (o.paymentStatus || 'unpaid') === filterPaymentStatus) &&
+                isInRange(new Date(o.createdAt)) &&
                 (!orderSearchQuery || 
                   o.billCode.toLowerCase().includes(orderSearchQuery.toLowerCase()) || 
                   o.customerName.toLowerCase().includes(orderSearchQuery.toLowerCase()) || 
@@ -788,6 +823,7 @@ export default function AdminPanel({
                         <th className="px-4 py-3">Mã đơn / Đặt lúc</th>
                         <th className="px-4 py-3">Khách hàng / Liên hệ</th>
                         <th className="px-4 py-3">Món ăn tóm tắt</th>
+                        <th className="px-4 py-3">Ghi chú</th>
                         <th className="text-right px-4 py-3">Thanh Toán</th>
                         <th className="px-4 py-3 text-center">Trạng Thái</th>
                         <th className="px-4 py-3 text-center">Tình Trạng</th>
@@ -821,6 +857,10 @@ export default function AdminPanel({
                                 📝 Ghép Chú: "{order.note}"
                               </span>
                             )}
+                          </td>
+    
+                          <td className="px-4 py-3.5 text-xs text-slate-500 max-w-[150px] truncate">
+                            {order.adminNote || '-'}
                           </td>
     
                           {/* Value & Pay method */}
@@ -1025,6 +1065,17 @@ export default function AdminPanel({
                   />
                 </div>
 
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Ghi chú ADMIN</label>
+                  <textarea
+                    rows={2}
+                    value={editingOrder.adminNote || ''}
+                    onChange={(e) => setEditingOrder({ ...editingOrder, adminNote: e.target.value })}
+                    placeholder="Ghi chú nội bộ..."
+                    className="w-full bg-slate-50 focus:bg-white border border-slate-200 focus:border-orange-500 rounded-xl px-3 py-2 text-xs font-semibold outline-none transition-colors resize-none"
+                  />
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Hình thức thanh toán</label>
@@ -1136,7 +1187,11 @@ export default function AdminPanel({
                       return (
                         <div key={prod.id} className="flex justify-between items-center bg-orange-50/20 hover:bg-orange-50 border border-orange-100/30 p-1.5 rounded-xl transition-all">
                           <div className="flex items-center gap-2 max-w-[70%]">
-                            <span className="text-sm shrink-0">{prod.image}</span>
+                            {prod.image.startsWith('data:image') || prod.image.startsWith('http') ? (
+                              <img src={prod.image} alt={prod.name} className="w-8 h-8 object-cover rounded-full" />
+                            ) : (
+                              <span className="text-sm shrink-0">{prod.image}</span>
+                            )}
                             <div className="flex flex-col truncate">
                               <span className="font-extrabold text-[11px] text-slate-800 truncate block">{prod.name}</span>
                               <span className="text-[9px] text-orange-600 font-extrabold font-mono">{prod.price.toLocaleString('vi-VN')}đ</span>
@@ -1377,17 +1432,31 @@ export default function AdminPanel({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Emoji / Biểu tượng hình ảnh</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="ví dụ: 🍜"
-                    value={newProduct.image}
-                    onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-center focus:bg-white outline-none"
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                <div className="md:col-span-1">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Emoji / Ảnh</label>
+                  {newProduct.image && (newProduct.image.startsWith('data:image') || newProduct.image.startsWith('http')) ? (
+                    <div className="relative w-full aspect-square rounded-xl overflow-hidden border border-slate-200">
+                      <img src={newProduct.image} alt="Preview" className="w-full h-full object-cover" />
+                      <button 
+                        type="button"
+                        onClick={() => setNewProduct({...newProduct, image: '🍜'})}
+                        className="absolute top-1 right-1 bg-white/80 rounded-full p-0.5 text-slate-500 hover:text-red-500"
+                        title="Xóa ảnh"
+                      >
+                        <span className="text-[10px]">✕</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      placeholder="ví dụ: 🍜"
+                      value={newProduct.image}
+                      onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-center focus:bg-white outline-none"
+                    />
+                  )}
                 </div>
 
                 <div className="md:col-span-3">
@@ -1395,10 +1464,43 @@ export default function AdminPanel({
                   <input
                     type="text"
                     required
-                    placeholder="Nguyên liệu chín tái, nước lèo nêm chuẩn vị..."
+                    placeholder="Nguyên liệu chín tái..."
                     value={newProduct.description}
                     onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:bg-white outline-none"
+                  />
+                </div>
+                
+                <div className="md:col-span-1">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tải ảnh lên</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = async (event) => {
+                          const img = new Image();
+                          img.src = event.target?.result as string;
+                          await img.decode();
+                          const canvas = document.createElement('canvas');
+                          const MAX_SIZE = 200;
+                          let { width, height } = img;
+                          if (width > height) {
+                            if (width > MAX_SIZE) { height = height * (MAX_SIZE / width); width = MAX_SIZE; }
+                          } else {
+                            if (height > MAX_SIZE) { width = width * (MAX_SIZE / height); height = MAX_SIZE; }
+                          }
+                          canvas.width = width;
+                          canvas.height = height;
+                          canvas.getContext('2d')?.drawImage(img, 0, 0, width, height);
+                          setNewProduct({ ...newProduct, image: canvas.toDataURL('image/jpeg', 0.5) });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="w-full text-[9px] p-2 border border-slate-200 rounded-lg cursor-pointer"
                   />
                 </div>
               </div>
@@ -1465,16 +1567,30 @@ export default function AdminPanel({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Emoji / Biểu tượng</label>
-                  <input
-                    type="text"
-                    required
-                    value={editingProduct.image}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-center focus:bg-white outline-none"
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                <div className="md:col-span-1">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Emoji / Ảnh</label>
+                  {editingProduct.image && (editingProduct.image.startsWith('data:image') || editingProduct.image.startsWith('http')) ? (
+                    <div className="relative w-full aspect-square rounded-xl overflow-hidden border border-slate-200">
+                      <img src={editingProduct.image} alt="Preview" className="w-full h-full object-cover" />
+                      <button 
+                        type="button"
+                        onClick={() => setEditingProduct({...editingProduct, image: '🍜'})}
+                        className="absolute top-1 right-1 bg-white/80 rounded-full p-0.5 text-slate-500 hover:text-red-500"
+                        title="Xóa ảnh"
+                      >
+                        <span className="text-[10px]">✕</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={editingProduct.image}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-center focus:bg-white outline-none"
+                    />
+                  )}
                 </div>
 
                 <div className="md:col-span-3">
@@ -1485,6 +1601,39 @@ export default function AdminPanel({
                     value={editingProduct.description}
                     onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:bg-white outline-none"
+                  />
+                </div>
+                
+                <div className="md:col-span-1">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tải ảnh lên</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = async (event) => {
+                          const img = new Image();
+                          img.src = event.target?.result as string;
+                          await img.decode();
+                          const canvas = document.createElement('canvas');
+                          const MAX_SIZE = 200;
+                          let { width, height } = img;
+                          if (width > height) {
+                            if (width > MAX_SIZE) { height = height * (MAX_SIZE / width); width = MAX_SIZE; }
+                          } else {
+                            if (height > MAX_SIZE) { width = width * (MAX_SIZE / height); height = MAX_SIZE; }
+                          }
+                          canvas.width = width;
+                          canvas.height = height;
+                          canvas.getContext('2d')?.drawImage(img, 0, 0, width, height);
+                          setEditingProduct({ ...editingProduct, image: canvas.toDataURL('image/jpeg', 0.5) });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="w-full text-[9px] p-2 border border-slate-200 rounded-lg cursor-pointer"
                   />
                 </div>
               </div>
@@ -1522,7 +1671,11 @@ export default function AdminPanel({
                 >
                   <div>
                     <div className="flex justify-between items-start mb-2">
-                      <span className="text-3xl select-none">{prod.image}</span>
+                      {prod.image.startsWith('data:image') || prod.image.startsWith('http') ? (
+                        <img src={prod.image} alt={prod.name} className="w-12 h-12 object-cover rounded-full" />
+                      ) : (
+                        <span className="text-3xl select-none">{prod.image}</span>
+                      )}
                       <div className="flex gap-1.5 items-center">
                         <button
                           onClick={() => toggleProductAvailability(prod.id)}

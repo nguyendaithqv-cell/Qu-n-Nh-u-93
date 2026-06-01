@@ -57,6 +57,7 @@ export interface Order {
   paymentStatus: PaymentStatus;
   createdAt: string;
   note?: string;
+  adminNote?: string;
 }
 
 export interface StoreConfig {
