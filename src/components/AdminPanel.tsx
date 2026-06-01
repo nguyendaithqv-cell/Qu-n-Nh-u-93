@@ -57,6 +57,8 @@ export default function AdminPanel({
 }: AdminPanelProps) {
   // Navigation
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'categories' | 'promotions' | 'store' | 'customers'>('orders');
+  const [productFilter, setProductFilter] = useState<'all' | 'available' | 'unavailable'>('all');
+  const [categoryIdFilter, setCategoryIdFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Sub States
@@ -99,6 +101,8 @@ export default function AdminPanel({
 
   // Order Edits & Safe Delete States
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
+  const [cancellationReason, setCancellationReason] = useState<string>('');
   const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
@@ -226,6 +230,14 @@ export default function AdminPanel({
 
   // Order Operations
   const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
+    if (newStatus === 'cancelled') {
+        const order = orders.find(o => o.id === orderId);
+        if (order) {
+            setOrderToCancel(order);
+            setCancellationReason('');
+            return;
+        }
+    }
     const updated = orders.map(ord => {
       if (ord.id === orderId) {
         return { ...ord, status: newStatus };
@@ -233,6 +245,20 @@ export default function AdminPanel({
       return ord;
     });
     onUpdateOrders(updated);
+  };
+
+  const handleConfirmCancelOrder = () => {
+      if (orderToCancel && cancellationReason) {
+          const updated = orders.map(ord => {
+              if (ord.id === orderToCancel.id) {
+                  return { ...ord, status: 'cancelled', cancellationReason: cancellationReason };
+              }
+              return ord;
+          });
+          onUpdateOrders(updated);
+          setOrderToCancel(null);
+          setCancellationReason('');
+      }
   };
 
   const handleDeleteOrderClick = (order: Order) => {
@@ -860,8 +886,8 @@ export default function AdminPanel({
                             )}
                           </td>
     
-                          <td className="px-4 py-3.5 text-xs text-slate-500 max-w-[150px] truncate">
-                            {order.adminNote || '-'}
+                          <td className="px-4 py-3.5 text-xs text-slate-500 max-w-[150px] truncate" title={order.adminNote || order.cancellationReason || '-'}>
+                            {order.adminNote || order.cancellationReason || '-'}
                           </td>
     
                           {/* Value & Pay method */}
@@ -948,7 +974,53 @@ export default function AdminPanel({
 
       {/* CUSTOM OVERLAYS FOR ORDERS */}
 
-      {/* 1. Safe Delete Confirmation Dialog Overlay */}
+      {/* 1. Cancellation Reason Confirmation Dialog Overlay */}
+      {orderToCancel && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 flex flex-col gap-4 text-slate-800">
+            <h3 className="font-extrabold text-sm uppercase tracking-wider text-rose-600">Lý do hủy đơn hàng {orderToCancel.billCode}</h3>
+            
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-500">Chọn lý do:</label>
+              {['Hết món', 'Khách hủy', 'Sai thông tin', 'Khác'].map(reason => (
+                <button
+                    key={reason}
+                    type="button"
+                    onClick={() => setCancellationReason(reason)}
+                    className={`w-full text-left p-3 rounded-xl border text-xs font-bold ${cancellationReason === reason ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-slate-50 border-slate-100'}`}
+                >
+                    {reason}
+                </button>
+              ))}
+              <input
+                type="text"
+                placeholder="Nhập lý do khác..."
+                value={cancellationReason === 'Khác' ? '' : cancellationReason}
+                onChange={(e) => setCancellationReason(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:bg-white outline-none"
+              />
+            </div>
+
+            <div className="flex gap-2.5 mt-3 justify-end">
+              <button
+                onClick={() => setOrderToCancel(null)}
+                className="px-4 py-2.5 text-[10px] font-extrabold uppercase bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={handleConfirmCancelOrder}
+                disabled={!cancellationReason}
+                className="px-4 py-2.5 text-[10px] font-extrabold uppercase bg-rose-600 hover:bg-rose-700 text-white rounded-xl transition-all disabled:opacity-50"
+              >
+                Xác nhận Hủy Đơn
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Safe Delete Confirmation Dialog Overlay */}
       {orderToDelete && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 flex flex-col gap-4 text-slate-800">
@@ -1183,10 +1255,10 @@ export default function AdminPanel({
                     ⚡ Thêm món nhanh từ thực đơn (nếu hết món cũ)
                   </span>
                   <div className="overflow-y-auto space-y-1.5 flex-1 pr-1 pb-1">
-                    {products.filter(p => p.isAvailable).map(prod => {
+                    {products.map(prod => {
                       const orderItemInst = editingOrder.items.find(i => i.productId === prod.id);
                       return (
-                        <div key={prod.id} className="flex justify-between items-center bg-orange-50/20 hover:bg-orange-50 border border-orange-100/30 p-1.5 rounded-xl transition-all">
+                        <div key={prod.id} className={`flex justify-between items-center bg-orange-50/20 hover:bg-orange-50 border border-orange-100/30 p-1.5 rounded-xl transition-all ${!prod.isAvailable ? 'opacity-50' : ''}`}>
                           <div className="flex items-center gap-2 max-w-[70%]">
                             {prod.image.startsWith('data:image') || prod.image.startsWith('http') ? (
                               <img src={prod.image} alt={prod.name} className="w-8 h-8 object-cover rounded-full" />
@@ -1194,7 +1266,7 @@ export default function AdminPanel({
                               <span className="text-sm shrink-0">{prod.image}</span>
                             )}
                             <div className="flex flex-col truncate">
-                              <span className="font-extrabold text-[11px] text-slate-800 truncate block">{prod.name}</span>
+                              <span className="font-extrabold text-[11px] text-slate-800 truncate block">{prod.name} {!prod.isAvailable && '(Hết)'}</span>
                               <span className="text-[9px] text-orange-600 font-extrabold font-mono">{prod.price.toLocaleString('vi-VN')}đ</span>
                             </div>
                           </div>
@@ -1359,6 +1431,23 @@ export default function AdminPanel({
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
             <h2 className="font-extrabold text-slate-800 text-xs uppercase tracking-wide">Quản lý món ăn</h2>
             <div className="flex flex-wrap gap-2 w-full md:w-auto">
+              <select
+                value={categoryIdFilter}
+                onChange={(e) => setCategoryIdFilter(e.target.value)}
+                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:bg-white outline-none w-32"
+              >
+                <option value="all">Tất cả danh mục</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <select
+                value={productFilter}
+                onChange={(e) => setProductFilter(e.target.value as any)}
+                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:bg-white outline-none w-32"
+              >
+                <option value="all">Tất cả TT</option>
+                <option value="available">Còn món</option>
+                <option value="unavailable">Hết món</option>
+              </select>
               <input
                 type="text"
                 placeholder="Tìm kiếm món..."
@@ -1660,44 +1749,50 @@ export default function AdminPanel({
           {/* Grid list of dishes in catalog */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {products
-              .filter(p => !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+              .filter(p => {
+                const matchesSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description.toLowerCase().includes(searchQuery.toLowerCase());
+                const matchesFilter = productFilter === 'all' || (productFilter === 'available' ? p.isAvailable : !p.isAvailable);
+                const matchesCategory = categoryIdFilter === 'all' || p.categoryId === categoryIdFilter;
+                return matchesSearch && matchesFilter && matchesCategory;
+              })
+              .sort((a,b) => a.name.localeCompare(b.name))
               .map(prod => {
-              const catObj = categories.find(c => c.id === prod.categoryId);
-              return (
-                <div 
-                  key={prod.id}
-                  className={`bg-white p-4 rounded-2xl border transition-all flex flex-col justify-between ${
-                    prod.isAvailable ? 'border-slate-200 shadow-xs' : 'border-slate-200/50 opacity-60 bg-slate-50/55 shadow-none'
-                  }`}
-                >
-                  <div>
-                    <div className="flex justify-between items-start mb-2">
-                      {prod.image.startsWith('data:image') || prod.image.startsWith('http') ? (
-                        <img src={prod.image} alt={prod.name} className="w-12 h-12 object-cover rounded-full" />
-                      ) : (
-                        <span className="text-3xl select-none">{prod.image}</span>
-                      )}
-                      <div className="flex gap-1.5 items-center">
-                        <button
-                          onClick={() => toggleProductAvailability(prod.id)}
-                          className={`p-1.5 border rounded-lg text-[9px] uppercase font-bold tracking-tighter ${
-                            prod.isAvailable 
-                              ? 'bg-green-50 border-green-300 text-green-700 hover:bg-green-100' 
-                              : 'bg-red-50 border-red-300 text-red-600 hover:bg-red-100'
-                          }`}
-                          title="Click để thay đổi khả năng phục vụ"
-                        >
-                          {prod.isAvailable ? 'Còn món' : 'Hết món'}
-                        </button>
+                const catObj = categories.find(c => c.id === prod.categoryId);
+                return (
+                  <div 
+                    key={prod.id}
+                    className={`bg-white p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+                      prod.isAvailable ? 'border-slate-200 shadow-xs' : 'border-slate-200/50 opacity-100 bg-slate-50 shadow-none'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex justify-between items-start mb-2">
+                        {prod.image.startsWith('data:image') || prod.image.startsWith('http') ? (
+                          <img src={prod.image} alt={prod.name} className="w-12 h-12 object-cover rounded-full" />
+                        ) : (
+                          <span className="text-3xl select-none">{prod.image}</span>
+                        )}
+                        <div className="flex gap-1.5 items-center">
+                          <button
+                            onClick={() => toggleProductAvailability(prod.id)}
+                            className={`p-1.5 border rounded-lg text-[9px] uppercase font-bold tracking-tighter ${
+                              prod.isAvailable 
+                                ? 'bg-green-50 border-green-300 text-green-700 hover:bg-green-100' 
+                                : 'bg-red-50 border-red-300 text-red-600 hover:bg-red-100'
+                            }`}
+                            title="Click để thay đổi khả năng phục vụ"
+                          >
+                            {prod.isAvailable ? 'Còn món' : 'Hết món'}
+                          </button>
+                        </div>
                       </div>
-                    </div>
 
-                    <h3 className="font-black text-slate-800 text-sm mb-0.5">{prod.name}</h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
-                      📁 {catObj?.name || 'Chưa nhóm'}
-                    </p>
-                    <p className="text-[10px] text-slate-500 line-clamp-2 leading-relaxed mb-3">{prod.description}</p>
-                  </div>
+                      <h3 className={`font-black text-sm mb-0.5 ${prod.isAvailable ? 'text-slate-800' : 'text-slate-500'}`}>{prod.name} {!prod.isAvailable && '(Hết món)'}</h3>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                        📁 {catObj?.name || 'Chưa nhóm'}
+                      </p>
+                      <p className="text-[10px] text-slate-500 line-clamp-2 leading-relaxed mb-3">{prod.description}</p>
+                    </div>
 
                   <div className="border-t border-slate-100 pt-3 flex justify-between items-center mt-3">
                     <span className="font-extrabold text-orange-600 text-sm font-mono">{prod.price.toLocaleString('vi-VN')} đ</span>
@@ -1982,6 +2077,14 @@ export default function AdminPanel({
                 </div>
               </div>
 
+              <div className="flex items-center gap-3 mt-4 flex-wrap pb-3">
+                <label className="flex items-center gap-1.5 cursor-pointer bg-slate-50 border p-2 rounded-xl text-[10px] font-bold text-slate-600">
+                  <input type="checkbox" checked={newPromo.isActive} onChange={(e) => setNewPromo({...newPromo, isActive: e.target.checked})} /> Kích hoạt
+                </label>
+                <input type="number" placeholder="Giới hạn số lần (0 = ko giới hạn)" value={newPromo.maxUsageCount || 0} onChange={(e) => setNewPromo({...newPromo, maxUsageCount: Number(e.target.value)})} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold w-full md:w-auto" />
+                <input type="datetime-local" value={newPromo.startDate || ''} onChange={(e) => setNewPromo({...newPromo, startDate: e.target.value})} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs w-full md:w-auto" />
+                <input type="datetime-local" value={newPromo.endDate || ''} onChange={(e) => setNewPromo({...newPromo, endDate: e.target.value})} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs w-full md:w-auto" />
+              </div>
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
@@ -2055,6 +2158,14 @@ export default function AdminPanel({
                 </div>
               </div>
 
+              <div className="flex items-center gap-3 mt-4 flex-wrap pb-3">
+                <label className="flex items-center gap-1.5 cursor-pointer bg-slate-50 border p-2 rounded-xl text-[10px] font-bold text-slate-600">
+                  <input type="checkbox" checked={editingPromo.isActive} onChange={(e) => setEditingPromo({...editingPromo, isActive: e.target.checked})} /> Kích hoạt
+                </label>
+                <input type="number" placeholder="Giới hạn số lần (0 = ko giới hạn)" value={editingPromo.maxUsageCount || 0} onChange={(e) => setEditingPromo({...editingPromo, maxUsageCount: Number(e.target.value)})} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold w-full md:w-auto" />
+                <input type="datetime-local" value={editingPromo.startDate || ''} onChange={(e) => setEditingPromo({...editingPromo, startDate: e.target.value})} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs w-full md:w-auto" />
+                <input type="datetime-local" value={editingPromo.endDate || ''} onChange={(e) => setEditingPromo({...editingPromo, endDate: e.target.value})} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs w-full md:w-auto" />
+              </div>
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
@@ -2082,12 +2193,18 @@ export default function AdminPanel({
                   <th className="px-4 py-3">Kiểu chiết khấu</th>
                   <th className="px-4 py-3 text-right">Mức gia giảm</th>
                   <th className="px-4 py-3 text-right">Đơn tối thiểu</th>
+                  <th className="px-4 py-3 text-center">Đã dùng (lần)</th>
+                  <th className="px-4 py-3 text-right">Tổng KM (đ)</th>
                   <th className="px-4 py-3 text-center">Trạng thái phát</th>
                   <th className="px-4 py-3 text-center">Xóa bỏ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {promotions.map(promo => (
+                {promotions.map(promo => {
+                   const usedOrders = orders.filter(o => o.promoCodeUsed === promo.code && (o.paymentStatus === 'paid' || o.paymentStatus === 'debt'));
+                   const usageCount = usedOrders.length;
+                   const totalSaved = usedOrders.reduce((sum, o) => sum + (o.discountAmount || 0), 0);
+                   return (
                   <tr key={promo.id} className="hover:bg-slate-50/50">
                     <td className="px-4 py-3 font-mono font-bold text-orange-600 text-xs">
                       {promo.code}
@@ -2100,6 +2217,12 @@ export default function AdminPanel({
                     </td>
                     <td className="px-4 py-3 text-right font-mono text-slate-500 text-xs">
                       {promo.minOrderValue.toLocaleString('vi-VN')} đ
+                    </td>
+                    <td className="px-4 py-3 text-center text-xs font-mono font-bold text-indigo-600">
+                      {usageCount}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono font-bold text-emerald-600 text-xs">
+                      {totalSaved.toLocaleString('vi-VN')} đ
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
@@ -2124,17 +2247,18 @@ export default function AdminPanel({
                         }}
                         className="p-1 px-2 border hover:bg-orange-50 hover:text-orange-600 rounded-lg text-slate-700 text-[10px] font-bold uppercase transition-all mr-1"
                       >
-                        Sửa
+                         Sửa
                       </button>
                       <button
                         onClick={() => handleDeletePromotion(promo.id)}
-                        className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-slate-100"
+                        className="p-1 px-2 border hover:bg-red-50 hover:text-red-600 rounded-lg text-slate-700 text-[10px] font-bold uppercase transition-all"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-3 h-3" />
                       </button>
                     </td>
                   </tr>
-                ))}
+                   )
+                })}
               </tbody>
             </table>
           </div>

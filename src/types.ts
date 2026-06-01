@@ -58,6 +58,7 @@ export interface Order {
   createdAt: string;
   note?: string;
   adminNote?: string;
+  cancellationReason?: string;
 }
 
 export interface StoreConfig {
@@ -79,6 +80,9 @@ export interface Promotion {
   value: number; // e.g. 10 for percentage, 20000 for fixed
   minOrderValue: number;
   isActive: boolean;
+  maxUsageCount?: number; // 0 or undefined for no limit
+  startDate?: string; // ISO datetime string
+  endDate?: string; // ISO datetime string
 }
 
 export interface CustomerCookieData {

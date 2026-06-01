@@ -160,7 +160,6 @@ export default function MobileSimulator({
 
   // Filter and Sort products
   const filteredProducts = products.filter(product => {
-    if (!product.isAvailable) return false;
     const matchesCategory = activeCategory === 'all' || product.categoryId === activeCategory;
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           product.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -590,17 +589,22 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
               {filteredProducts.map(product => (
                 <div 
                   key={product.id}
-                  className="bg-white p-3 rounded-2xl shadow-xs border border-slate-100 flex gap-3 hover:border-orange-200 transition-colors"
+                  className={`bg-white p-3 rounded-2xl shadow-xs border border-slate-100 flex gap-3 hover:border-orange-200 transition-colors ${!product.isAvailable ? 'opacity-60 bg-slate-50' : ''}`}
                 >
                   {/* Product Image representation */}
-                  <div className="w-16 h-16 bg-orange-50 rounded-xl flex items-center justify-center text-4xl shrink-0 select-none">
+                  <div className="relative w-16 h-16 bg-orange-50 rounded-xl flex items-center justify-center text-4xl shrink-0 select-none">
                     {getProductImageSymbol(product)}
+                    {!product.isAvailable && (
+                      <div className="absolute inset-0 bg-slate-900/50 rounded-xl flex items-center justify-center text-[8px] font-black text-white uppercase transform rotate-[-10deg]">Hết món</div>
+                    )}
                   </div>
 
                   {/* Product Info */}
                   <div className="flex-1 min-w-0 flex flex-col justify-between">
                     <div>
-                      <h3 className="font-bold text-xs text-slate-800 truncate">{product.name}</h3>
+                      <h3 className={`font-bold text-xs truncate ${!product.isAvailable ? 'text-slate-500' : 'text-slate-800'}`}>
+                        {product.name} {!product.isAvailable && '(Hết)'}
+                      </h3>
                       <p className="text-[9px] text-slate-400 line-clamp-2 leading-relaxed mt-0.5">{product.description}</p>
                     </div>
                     <div className="flex justify-between items-center mt-1">
@@ -609,31 +613,33 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
                       </span>
                       
                       {/* Cart counter indicator for this product */}
-                      {cart.find(c => c.product.id === product.id) ? (
-                        <div className="flex items-center gap-1.5 bg-orange-50 rounded-lg p-0.5">
-                          <button 
-                            onClick={() => updateQuantity(product.id, -1)}
-                            className="w-5 h-5 bg-white text-orange-600 border border-orange-100 rounded flex items-center justify-center text-xs font-extrabold shadow-sm active:scale-90"
-                          >
-                            -
-                          </button>
-                          <span className="text-[10px] font-bold text-orange-600 px-0.5 min-w-3 text-center">
-                            {cart.find(c => c.product.id === product.id)?.quantity}
-                          </span>
+                      {product.isAvailable && (
+                        cart.find(c => c.product.id === product.id) ? (
+                          <div className="flex items-center gap-1.5 bg-orange-50 rounded-lg p-0.5">
+                            <button 
+                              onClick={() => updateQuantity(product.id, -1)}
+                              className="w-5 h-5 bg-white text-orange-600 border border-orange-100 rounded flex items-center justify-center text-xs font-extrabold shadow-sm active:scale-90"
+                            >
+                              -
+                            </button>
+                            <span className="text-[10px] font-bold text-orange-600 px-0.5 min-w-3 text-center">
+                              {cart.find(c => c.product.id === product.id)?.quantity}
+                            </span>
+                            <button 
+                              onClick={() => addToCart(product)}
+                              className="w-5 h-5 bg-orange-600 text-white rounded flex items-center justify-center text-xs font-extrabold shadow-sm active:scale-90"
+                            >
+                              +
+                            </button>
+                          </div>
+                        ) : (
                           <button 
                             onClick={() => addToCart(product)}
-                            className="w-5 h-5 bg-orange-600 text-white rounded flex items-center justify-center text-xs font-extrabold shadow-sm active:scale-90"
+                            className="px-2.5 py-1 bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-extrabold rounded-lg transition-transform active:scale-95 flex items-center gap-1 shadow-xs shadow-orange-100"
                           >
-                            +
+                            <Plus className="w-3.5 h-3.5" /> Thêm
                           </button>
-                        </div>
-                      ) : (
-                        <button 
-                          onClick={() => addToCart(product)}
-                          className="px-2.5 py-1 bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-extrabold rounded-lg transition-transform active:scale-95 flex items-center gap-1 shadow-xs shadow-orange-100"
-                        >
-                          <Plus className="w-3.5 h-3.5" /> Thêm
-                        </button>
+                        )
                       )}
                     </div>
                   </div>
@@ -720,6 +726,11 @@ Cảm ơn quý khách đã tin cậy nâng niu khẩu vị cùng Quán Nhậu KH
                         </span>
                       </div>
                     </div>
+                    {order.status === 'cancelled' && order.cancellationReason && (
+                        <div className="bg-rose-50 p-2 rounded-lg text-[10px] text-rose-800 font-medium">
+                            <strong>Lý do hủy:</strong> {order.cancellationReason}
+                        </div>
+                    )}
 
                     {/* Displayer for ordered dishes */}
                     <div className="bg-slate-50/70 p-2.5 rounded-xl text-xs text-slate-700 space-y-1">
